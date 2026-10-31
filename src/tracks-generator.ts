@@ -28,6 +28,10 @@ interface TrackProfile {
 export const TRACK_PROFILES: readonly TrackProfile[] = [
   { slug: 'melbourne', name: 'Melbourne', laps: 58, km: 5.3, corneriness: 0.45, deg: 0.95, pit: 21 },
   { slug: 'yeda', name: 'Yeda', laps: 50, km: 6.2, corneriness: 0.7, deg: 0.9, pit: 24 },
+  // Spec 020: Miami joins — the 20 current-world circuits plus Jerez
+  // make 21 rounds. Real figures: 5.412 km, 57 laps, 19 turns; slow-ish
+  // concrete layout, medium-high tyre wear.
+  { slug: 'miami', name: 'Miami', laps: 57, km: 5.4, corneriness: 0.6, deg: 1.1, pit: 22 },
   { slug: 'suzuka', name: 'Suzuka', laps: 53, km: 5.8, corneriness: 0.5, deg: 1.1, pit: 23 },
   { slug: 'baku', name: 'Bakú', laps: 51, km: 6.0, corneriness: 0.6, deg: 0.9, pit: 25 },
   { slug: 'madrid', name: 'Madrid', laps: 55, km: 5.5, corneriness: 0.65, deg: 1.0, pit: 22 },
@@ -50,7 +54,7 @@ export const TRACK_PROFILES: readonly TrackProfile[] = [
 
 // The layouts are dense already (real traces), so a light smoothing
 // pass is enough.
-const SUBDIVISIONS_PER_SEGMENT = 3;
+export const SUBDIVISIONS_PER_SEGMENT = 3; // (spec 020: harness fidelity check recomputes the real path)
 const NORMALIZATION_MARGIN = 0.06;
 
 // --- Declash (spec 018) ---
@@ -153,7 +157,7 @@ export function declash(points: { x: number; y: number }[]): { x: number; y: num
 
 // Fit a closed path into NORMALIZATION_MARGIN..1-margin, keeping the
 // aspect ratio (shared by the first pass and the post-declash pass).
-function normalizeIntoMargin(
+export function normalizeIntoMargin(
   pts: { x: number; y: number }[]
 ): { x: number; y: number }[] {
   let minX = Infinity;
@@ -181,10 +185,11 @@ export function generateTrack(seed: number): Track {
   const layout = REAL_LAYOUTS[seed % REAL_LAYOUTS.length];
 
   // Catmull-Rom smoothing into a closed dense loop (shared code with
-  // the renderer), then normalize, declash and re-normalize (the push
-  // can drift slightly out of the margins).
+  // the renderer), then straight normalization. Spec 020: the REAL
+  // shape rules — declash (018) is no longer applied; sections that
+  // run close in the real circuit may visually merge, by design.
   const smooth = buildTrackSampler(layout, SUBDIVISIONS_PER_SEGMENT).polyline();
-  const path = normalizeIntoMargin(declash(normalizeIntoMargin(smooth)));
+  const path = normalizeIntoMargin(smooth);
 
   // Personality numbers from the profile (real-ish values).
   // overtakeDifficulty is derived from corneriness:

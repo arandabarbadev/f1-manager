@@ -40,7 +40,7 @@ export function createSeasonScreen(container: HTMLElement, onExit: () => void): 
   main.className = 'season-main';
 
   const card = document.createElement('section');
-  card.className = 'card';
+  card.className = 'card cut'; // spec 020
 
   const list = document.createElement('div');
   list.className = 'season-list';

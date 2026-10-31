@@ -97,8 +97,27 @@ export function createTeamScreen(
 
   const root = document.createElement('div');
   root.className = 'team-screen';
+  // Spec 020: slim header (money + theme + "Más" menu), navigation
+  // with the race action attached (bottom bar on phones, side rail on
+  // desktop) — the main action and section switching live in thumb
+  // reach, destructive/rare actions grouped away from them.
   root.innerHTML = `
     <header class="team-header">
+      <div class="header-right">
+        <div class="budget-chip"><span class="budget-value"></span> M</div>
+        <button type="button" class="btn theme-btn"></button>
+        <div class="more-wrap">
+          <button type="button" class="btn more-btn" title="Partidas, instalar, reiniciar o salir">Más ▾</button>
+          <div class="more-menu hidden">
+            <button type="button" class="btn more-item slots-btn" title="Las 3 partidas guardadas: crear, cambiar o borrar">Partidas</button>
+            <button type="button" class="btn more-item install-btn hidden">Instalar app</button>
+            <button type="button" class="btn more-item reset-season-btn" title="Empezar de cero: reinicia dinero, patrocinador, desarrollos, sede y temporada">Reiniciar</button>
+            <button type="button" class="btn more-item logout-btn hidden">Salir</button>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div class="team-body">
       <nav class="nav-tabs">
         <button type="button" class="btn nav-btn active" data-tab="team">Mi Equipo</button>
         <button type="button" class="btn nav-btn" data-tab="pilots">Pilotos</button>
@@ -106,20 +125,12 @@ export function createTeamScreen(
         <button type="button" class="btn nav-btn" data-tab="rivals">Rivales</button>
         <button type="button" class="btn nav-btn" data-tab="sponsors">Patrocinadores</button>
         <button type="button" class="btn nav-btn" data-tab="champ">Campeonato</button>
+        <button type="button" class="btn primary go-race-btn"></button>
       </nav>
-      <div class="header-right">
-        <div class="budget-chip"><span class="budget-value"></span> M</div>
-        <button type="button" class="btn slots-btn" title="Las 3 partidas guardadas: crear, cambiar o borrar">Partidas</button>
-        <button type="button" class="btn reset-season-btn" title="Empezar de cero: reinicia dinero, patrocinador, desarrollos, sede y temporada">Reiniciar</button>
-        <button type="button" class="btn theme-btn"></button>
-        <button type="button" class="btn install-btn hidden">Instalar app</button>
-        <button type="button" class="btn logout-btn hidden">Salir</button>
-        <button type="button" class="btn primary go-race-btn">Carrera</button>
-      </div>
-    </header>
-    <main class="team-main">
-      <section class="card tab-panel"></section>
-    </main>`;
+      <main class="team-main">
+        <section class="card cut tab-panel"></section>
+      </main>
+    </div>`;
   container.appendChild(root);
 
   const playerEntry = (): TeamEntry =>
@@ -135,6 +146,19 @@ export function createTeamScreen(
   else slotsBtn.remove();
   const logoutBtn = root.querySelector<HTMLButtonElement>('.logout-btn')!;
   const navBtns = [...root.querySelectorAll<HTMLButtonElement>('.nav-btn')];
+  // Spec 020: the "Más" menu groups the secondary/destructive
+  // actions; it closes on outside clicks.
+  const moreBtn = root.querySelector<HTMLButtonElement>('.more-btn')!;
+  const moreMenu = root.querySelector<HTMLElement>('.more-menu')!;
+  moreBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    moreMenu.classList.toggle('hidden');
+  });
+  root.addEventListener('click', (e) => {
+    if (!moreMenu.classList.contains('hidden') && !(e.target as HTMLElement).closest('.more-wrap')) {
+      moreMenu.classList.add('hidden');
+    }
+  });
 
   // Everything the screens save goes to localStorage + the cloud.
   function syncAll(): void {
@@ -226,12 +250,13 @@ export function createTeamScreen(
   goRaceBtn.addEventListener('click', () => onGoRace());
 
   // ---- Tabs ----
+  function setTab(next: TabId): void {
+    tab = next;
+    navBtns.forEach((b) => b.classList.toggle('active', b.dataset.tab === next));
+    renderTab();
+  }
   for (const btn of navBtns) {
-    btn.addEventListener('click', () => {
-      tab = btn.dataset.tab as TabId;
-      navBtns.forEach((b) => b.classList.toggle('active', b === btn));
-      renderTab();
-    });
+    btn.addEventListener('click', () => setTab(btn.dataset.tab as TabId));
   }
 
   function refresh(): void {
@@ -252,9 +277,53 @@ export function createTeamScreen(
 
   // ---- Tab: Mi Equipo ----
   function renderTeamTab(): void {
-    const title = document.createElement('h2');
-    title.textContent = 'Mi Equipo';
-    panel.appendChild(title);
+    // Spec 020: the dashboard lands on the team summary — livery,
+    // big money figure and championship position — before any form.
+    const hero = document.createElement('section');
+    hero.className = 'team-hero cut';
+    const champTables = computeChampionship(career.seasonResults);
+    const champPos = champTables.teams.findIndex(
+      (t) => t.teamId === roster.playerTeamId
+    );
+    hero.innerHTML = `
+      <div class="hero-info">
+        <div class="hero-name"></div>
+        <div class="hero-pos"></div>
+      </div>
+      <div class="hero-money"></div>`;
+    hero.querySelector<HTMLElement>('.hero-name')!.textContent =
+      playerEntry().team.name;
+    hero.querySelector<HTMLElement>('.hero-pos')!.textContent =
+      champPos >= 0 ? `P${champPos + 1} constructores` : 'Sin correr aún';
+    hero.querySelector<HTMLElement>('.hero-money')!.textContent =
+      `${Math.round(career.budget)} M€`;
+    hero.style.borderLeftColor = playerEntry().team.color;
+    panel.appendChild(hero);
+
+    // Section shortcuts (the nav rail/bar holds them too; these make
+    // the dashboard a hub on its own).
+    const links = document.createElement('div');
+    links.className = 'hero-links';
+    const linkDefs: [TabId, string][] = [
+      ['pilots', 'Pilotos'],
+      ['hq', 'Sede'],
+      ['rivals', 'Rivales'],
+      ['sponsors', 'Patrocinadores'],
+      ['champ', 'Campeonato'],
+    ];
+    for (const [id, label] of linkDefs) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn';
+      btn.textContent = label;
+      btn.addEventListener('click', () => setTab(id));
+      links.appendChild(btn);
+    }
+    panel.appendChild(links);
+
+    const identityTitle = document.createElement('h3');
+    identityTitle.textContent = 'Identidad';
+    panel.appendChild(identityTitle);
 
     const identity = document.createElement('div');
     identity.className = 'form-row';

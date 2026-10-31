@@ -24,31 +24,78 @@
   border-bottom: 1px solid var(--border);
 }
 
-.race-title {
-  font-weight: 700;
+/* Spec 020: the info bar leads — circuit, BIG lap counter, weather
+   and clock; controls are secondary and grouped. */
+.race-info {
+  display: flex;
+  align-items: baseline;
+  gap: 6px 14px;
+  flex-wrap: wrap;
+  margin-right: auto;
+  min-width: 0;
 }
 
 .race-name {
-  margin-right: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/* The lap count is the big number of the broadcast. */
 .race-lap {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
   color: var(--accent-text);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.race-meta {
-  display: flex;
-  gap: 12px;
+.race-weather,
+.race-clock {
   color: var(--dim);
   font-variant-numeric: tabular-nums;
-  margin-right: auto;
+  white-space: nowrap;
 }
 
 .race-controls {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Spec 020: pause + speeds form ONE compact selector, apart from the
+   information (they must not compete with it). */
+.speed-group {
+  display: flex;
+  background: var(--btn-bg);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-touch);
+  overflow: hidden;
+}
+
+.speed-group .btn {
+  border: none;
+  border-radius: 0;
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: transparent;
+}
+
+.speed-group .btn:hover:not(:disabled) {
+  background: var(--btn-hover);
+}
+
+.speed-group .btn.active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.speed-group .btn + .btn {
+  border-left: 1px solid var(--border);
 }
 
 .race-body {
@@ -192,9 +239,24 @@
   white-space: nowrap;
 }
 
-.pit-tyre .tyre {
+/* Spec 020: the current rubber shows as a bigger compound ring. */
+.pit-tyre .tyre-ico {
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+}
+
+/* Compound buttons: the ring IS the label. */
+.pit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pit-btn .tyre-ico {
+  width: 24px;
+  height: 24px;
   font-size: 12px;
-  min-width: 1.2em;
 }
 
 .pit-tyre .wear {
@@ -221,9 +283,11 @@
   padding: 0;
 }
 
+/* Spec 020: timing-tower row — [position][team stripe][3-letter
+   code][gap][tyre ring][wear][pit flag]. Full name on the tooltip. */
 .standing-row {
   display: grid;
-  grid-template-columns: 1.8em 1.5em 0.9em 1fr 4.2em 1.4em 3.4em 3em;
+  grid-template-columns: 1.9em 4px 3.2ch 1fr 20px 3.4em 2.6em;
   gap: 6px;
   align-items: center;
   padding: 5px 6px;
@@ -245,6 +309,19 @@
   color: var(--text);
 }
 
+.standing-row .stripe {
+  width: 4px;
+  height: 1.6em;
+}
+
+.standing-row .code {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Race number (spec 008): bold so the car is identifiable without
    team colors. */
 .standing-row .num {
@@ -252,54 +329,10 @@
   text-align: right;
 }
 
-.tcolor {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.dname {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .gap {
   color: var(--dim);
   text-align: right;
-}
-
-.tyre {
-  text-align: center;
-  font-weight: 700;
-}
-
-/* Spec 019: the real F1 compound code — soft red, medium yellow,
-   hard white, intermediate green, wet blue. Theme variants in
-   ui.css; hard white gets a dark halo on the light theme. */
-.tyre.soft {
-  color: var(--tyre-soft);
-}
-
-.tyre.medium {
-  color: var(--tyre-medium);
-}
-
-.tyre.hard {
-  color: var(--tyre-hard);
-}
-
-:root[data-theme='light'] .tyre.hard {
-  text-shadow: 0 0 2px rgba(0, 0, 0, 0.85), 0 0 2px rgba(0, 0, 0, 0.85);
-}
-
-.tyre.inter {
-  color: var(--tyre-inter);
-}
-
-.tyre.wet {
-  color: var(--tyre-wet);
+  white-space: nowrap;
 }
 
 .wear {
@@ -337,7 +370,7 @@
 
 /* Spec 015: rival rows keep the tyre cells' grid slots (alignment)
    but show nothing in them. */
-.standing-row.no-tyre .tyre,
+.standing-row.no-tyre .tyre-ico,
 .standing-row.no-tyre .wear {
   visibility: hidden;
 }
@@ -531,12 +564,22 @@
     min-height: 30px;
   }
 
-  .race-meta {
+  .race-name {
     display: none;
   }
 
-  .race-name {
+  .race-lap {
+    font-size: 18px;
+  }
+
+  .race-clock {
     display: none;
+  }
+
+  .speed-group .btn {
+    min-height: 26px;
+    padding: 3px 7px;
+    font-size: 11px;
   }
 
   .track-wrap {
@@ -576,7 +619,29 @@
     font-size: 11px;
     padding: 3px 4px;
     gap: 4px;
-    grid-template-columns: 1.5em 0.8em 1fr 3.6em 1.1em 2.8em 2.2em;
+    grid-template-columns: 1.6em 3px 2.8ch 1fr 16px 2.8em 2em;
+  }
+
+  .standing-row .pos {
+    font-size: 13px;
+  }
+
+  .tyre-ico {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    border-width: 2px;
+  }
+
+  .pit-tyre .tyre-ico {
+    width: 20px;
+    height: 20px;
+  }
+
+  .pit-btn .tyre-ico {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
   }
 
   .standing-row .pitflag {

@@ -12,7 +12,7 @@ export function createAuthScreen(container: HTMLElement, onDone: () => void): vo
   const root = document.createElement('div');
   root.className = 'auth-screen';
   root.innerHTML = `
-    <div class="auth-card">
+    <div class="auth-card cut">
       <h1>Motorsport Manager</h1>
       <p class="auth-sub">Entra con tu cuenta para guardar tu partida en la nube</p>
       <label class="field">Email

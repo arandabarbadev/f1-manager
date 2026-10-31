@@ -1,16 +1,24 @@
-import { RaceState } from './types';
+import { Driver, RaceState } from './types';
 import { resetPitCommands, simulationTick } from './simulation';
 import { buildTestRaceState } from './test-grid';
-import { ALL_TRACKS } from './tracks-generator';
+import {
+  ALL_TRACKS,
+  normalizeIntoMargin,
+  SUBDIVISIONS_PER_SEGMENT,
+} from './tracks-generator';
+import { REAL_LAYOUTS } from './real-layouts';
+import { buildTrackSampler } from './track-path';
 import { LATERAL_MAX, lateralTarget, stepLateral } from './racing-line';
 import {
   applyPilotUpgrade,
   createDefaultRoster,
   driverVal,
   MAX_DRIVER_STAT,
+  PILOT_ATTRS,
   pilotUpgradeCost,
   setDriverNumber,
 } from './roster';
+import { assignDriverCodes, driverCodeBase } from './driver-codes';
 import {
   DIFFICULTY_ORDER,
   DIFFICULTY_PRESETS,
@@ -155,9 +163,11 @@ function difficultySelfCheck(lines: string[]): void {
 const pad = (s: string, n: number): string => (s.length >= n ? s : s + ' '.repeat(n - s.length));
 const padL = (s: string, n: number): string => (s.length >= n ? s : ' '.repeat(n - s.length) + s);
 
-// Acceptance check 5 (spec 018): 20 season tracks, real Jerez among
-// them, and de-clashed layouts — sections of the lap that are not the
-// same corner keep enough gap that the road ribbons read separately.
+// Acceptance check 5 (specs 018/020): 21 season tracks — the world
+// championship set (Miami in, spec 020) plus Jerez — each drawn as
+// its REAL layout: the published path must equal the source trace
+// (smoothed + normalized) with NO deformation. Overlapping sections
+// of the real circuit are welcome again.
 function tracksSelfCheck(lines: string[]): void {
   let failures = 0;
   const expect = (ok: boolean, what: string): void => {
@@ -167,19 +177,44 @@ function tracksSelfCheck(lines: string[]): void {
     }
   };
 
-  expect(ALL_TRACKS.length === 20, '20 circuitos (son ' + ALL_TRACKS.length + ')');
+  expect(ALL_TRACKS.length === 21, '21 circuitos (son ' + ALL_TRACKS.length + ')');
   expect(ALL_TRACKS.some((t) => t.id === 'gp-jerez'), 'Jerez presente');
+  expect(ALL_TRACKS.some((t) => t.id === 'gp-miami'), 'Miami presente (020)');
   const has = (slug: string): boolean => ALL_TRACKS.some((t) => t.id === 'gp-' + slug);
   expect(!has('kyalami') && !has('lemans') && !has('nurburgring') && !has('estoril'), 'retirados fuera');
 
-  // Minimum gap between non-neighbor sections, in two buckets: FOLDS
-  // (6-10% of the lap apart — esses and snake lanes, opened softly)
-  // and PARALLELS (over 10% — must fully separate). Below 6% it is
-  // the same corner, not a clash.
+  // Fidelity (spec 020): the drawn path IS the real one. Recompute
+  // the un-declashed expectation (same code path as generateTrack
+  // minus declash) and compare point by point — reintroducing the
+  // 018 push would break this instantly.
+  const realPath = (layout: { x: number; y: number }[]): { x: number; y: number }[] =>
+    normalizeIntoMargin(buildTrackSampler(layout, SUBDIVISIONS_PER_SEGMENT).polyline());
+  let worstFidelity = 0;
+  let worstName = '';
+  for (let i = 0; i < ALL_TRACKS.length; i++) {
+    const expected = realPath(REAL_LAYOUTS[i]);
+    const path = ALL_TRACKS[i].path;
+    if (path.length !== expected.length) {
+      failures++;
+      lines.push('FAIL trazados: puntos distintos en ' + ALL_TRACKS[i].name);
+      continue;
+    }
+    let maxD = 0;
+    for (let k = 0; k < path.length; k++) {
+      maxD = Math.max(maxD, Math.hypot(path[k].x - expected[k].x, path[k].y - expected[k].y));
+    }
+    if (maxD > worstFidelity) {
+      worstFidelity = maxD;
+      worstName = ALL_TRACKS[i].name;
+    }
+  }
+  expect(worstFidelity < 1e-9, 'trazados = reales sin deformar (peor ' + worstName + ' ' + worstFidelity.toExponential(1) + ')');
+
+  // Evidence inversion of 018: Singapore's castle section runs close
+  // to itself in the real circuit — the minimum-gap rule is gone.
   const minSectionGap = (
     path: { x: number; y: number }[],
-    fromArcFrac: number,
-    toArcFrac: number
+    fromArcFrac: number
   ): number => {
     const n = path.length;
     const cum: number[] = [0];
@@ -191,41 +226,69 @@ function tracksSelfCheck(lines: string[]): void {
     for (let a = 0; a < n; a++) {
       for (let b = a + 1; b < n; b++) {
         const arc = Math.min(cum[b] - cum[a], total - (cum[b] - cum[a]));
-        if (arc < total * fromArcFrac || arc >= total * toArcFrac) continue;
+        if (arc < total * fromArcFrac) continue;
         const d = Math.hypot(path[a].x - path[b].x, path[a].y - path[b].y);
         if (d < min) min = d;
       }
     }
     return min;
   };
-  const gaps = ALL_TRACKS.map((t) => ({
-    name: t.name,
-    fold: minSectionGap(t.path, 0.06, 0.1),
-    parallel: minSectionGap(t.path, 0.1, 1),
-  })).sort((a, b) => a.fold - b.fold);
-  // Folds peel apart at least a bit (a glued blob stays glued forever);
-  // parallels properly separate. Suzuka's figure-8 CROSSES ITSELF
-  // (the bridge) — the crossing arms sit ~8% of the lap apart, so its
-  // fold number is a crossing by design, not a glued blob.
-  expect(
-    gaps.every((g) => g.name === 'Suzuka' || g.fold >= 0.02),
-    'plegamientos >= 0.02 (peor ' + gaps[0].name + ' ' + gaps[0].fold.toFixed(3) + ')'
-  );
-  expect(
-    gaps.every((g) => g.parallel >= 0.05),
-    'paralelos >= 0.05 (peor ' + [...gaps].sort((a, b) => a.parallel - b.parallel)[0].name + ' ' +
-      Math.min(...gaps.map((g) => g.parallel)).toFixed(3) + ')'
-  );
-  const worstFold = gaps.filter((g) => g.name !== 'Suzuka')[0];
-  const suzuka = gaps.find((g) => g.name === 'Suzuka')!;
-  const worstParallel = [...gaps].sort((a, b) => a.parallel - b.parallel)[0];
+  const singapore = ALL_TRACKS.find((t) => t.name === 'Singapur')!;
+  const sgParallel = minSectionGap(singapore.path, 0.1);
+  expect(sgParallel < 0.05, 'Singapur real de nuevo (paralelos ' + sgParallel.toFixed(3) + ' < 0.05)');
 
   lines.push(
     failures === 0
-      ? 'Tracks check: 20 OK | Jerez OK | retirados fuera OK | separacion OK (peor pliegue ' +
-          worstFold.name + ' ' + worstFold.fold.toFixed(3) + ', puente Suzuka ' + suzuka.fold.toFixed(3) +
-          ', peor paralelo ' + worstParallel.name + ' ' + worstParallel.parallel.toFixed(3) + ')'
+      ? 'Tracks check: 21 OK | Miami OK | Jerez OK | retirados fuera OK | trazados reales sin deformar (peor ' +
+          worstName + ' ' + worstFidelity.toExponential(1) + ') | Singapur con sus solapes reales (' +
+          sgParallel.toFixed(3) + ')'
       : 'Tracks check: ' + failures + ' FALLOS'
+  );
+}
+
+// Acceptance check 8 (spec 020): broadcast codes — 3 letters from
+// the surname, unique across the grid, deterministic, surviving
+// renames; forced collisions resolve in roster order.
+function codesSelfCheck(lines: string[]): void {
+  let failures = 0;
+  const expect = (ok: boolean, what: string): void => {
+    if (!ok) {
+      failures++;
+      lines.push('FAIL codigos: ' + what);
+    }
+  };
+
+  const roster = createDefaultRoster(200);
+  const drivers = roster.entries.flatMap((e) => e.drivers);
+  const codes = assignDriverCodes(drivers);
+  expect(drivers.length === 20, '20 pilotos');
+  const values = [...codes.values()];
+  expect(codes.size === 20 && new Set(values).size === 20, '20 codigos unicos');
+  expect(values.every((c) => /^[A-Z]{3}$/.test(c)), 'formato [A-Z]{3}');
+  const again = assignDriverCodes(drivers);
+  expect([...again.entries()].every(([id, c]) => codes.get(id) === c), 'deterministas (misma lista, mismos codigos)');
+
+  // Player placeholders fall back to the full name's letters.
+  expect(driverCodeBase('Piloto 1') === 'PIL', "'Piloto 1' -> PIL");
+
+  // Three Rossis: first keeps the base, the others walk letters.
+  const mk = (id: string, name: string): Driver => ({
+    id, name, number: 1, pace: 50, consistency: 50, aggression: 50,
+    wetSkill: 50, riskTolerance: 50, experience: 50,
+  });
+  const rossis = assignDriverCodes([mk('a', 'Ana Rossi'), mk('b', 'Berta Rossi'), mk('c', 'Carla Rossi')]);
+  const rv = [...rossis.values()];
+  expect(rv[0] === 'ROS' && new Set(rv).size === 3, '3 Rossi distintos, el primero ROS (' + rv.join(',') + ')');
+
+  // Renaming one driver to another's surname keeps the grid unique.
+  drivers[0].name = drivers[1].name;
+  const renamed = assignDriverCodes(drivers);
+  expect(new Set(renamed.values()).size === 20, 'sin colisiones tras renombrar');
+
+  lines.push(
+    failures === 0
+      ? 'Codigos check: 20 unicos OK | deterministas OK | 3 Rossi OK (' + rv.join(',') + ') | renombrado OK'
+      : 'Codigos check: ' + failures + ' FALLOS'
   );
 }
 
@@ -299,12 +362,15 @@ function pilotsSelfCheck(lines: string[]): void {
     'val = media de las 4'
   );
 
-  // First upgrade of Ritmo: +1 pace, 15 M€, ledger ticks up.
-  const paceBefore = driver.pace;
-  const first = applyPilotUpgrade(driver, 'ritmo', 200);
+  // First upgrade: pick an attribute that is not maxed yet (a random
+  // roster can start at 95 — the UI shows MÁX there, the purchase is
+  // legitimately impossible).
+  const attr = PILOT_ATTRS.find((a) => driver[a.stat] < MAX_DRIVER_STAT) ?? PILOT_ATTRS[0];
+  const statBefore = driver[attr.stat];
+  const first = applyPilotUpgrade(driver, attr.id, 200);
   expect(first.ok && first.cost === 15, 'primer nivel cuesta 15');
-  expect(driver.pace === paceBefore + 1, 'ritmo sube la stat real (pace)');
-  expect((driver.training?.ritmo ?? 0) === 1, 'ledger del training');
+  expect(driver[attr.stat] === statBefore + 1, attr.label + ' sube la stat real');
+  expect((driver.training?.[attr.id] ?? 0) === 1, 'ledger del training');
   expect(pilotUpgradeCost(1) === 30, 'el segundo nivel cuesta 30');
   expect(
     driverVal(driver) === before || driverVal(driver) === before + 1,
@@ -312,14 +378,14 @@ function pilotsSelfCheck(lines: string[]): void {
   );
 
   // Broke team: no purchase, no change.
-  const paceMid = driver.pace;
-  expect(applyPilotUpgrade(driver, 'ritmo', 5).ok === false, 'sin dinero no compra');
-  expect(driver.pace === paceMid, 'sin dinero no cambia la stat');
+  const statMid = driver[attr.stat];
+  expect(applyPilotUpgrade(driver, attr.id, 5).ok === false, 'sin dinero no compra');
+  expect(driver[attr.stat] === statMid, 'sin dinero no cambia la stat');
 
   // Cap: a maxed stat cannot be bought even with money.
-  driver.pace = MAX_DRIVER_STAT;
-  expect(applyPilotUpgrade(driver, 'ritmo', 9999).ok === false, 'tope 95 bloqueado');
-  driver.pace = paceMid; // restore
+  driver[attr.stat] = MAX_DRIVER_STAT;
+  expect(applyPilotUpgrade(driver, attr.id, 9999).ok === false, 'tope 95 bloqueado');
+  driver[attr.stat] = statMid; // restore
 
   // Race numbers: 1-99, unique across the whole grid.
   expect(setDriverNumber(roster, player, 0, 44) === true, 'dorsal 44 aceptado');
@@ -448,6 +514,9 @@ export function runTestHarness(): string {
 
   // Acceptance check 7 (spec 019): pilots and race numbers.
   pilotsSelfCheck(lines);
+
+  // Acceptance check 8 (spec 020): broadcast codes.
+  codesSelfCheck(lines);
 
   return lines.join('\n');
 }

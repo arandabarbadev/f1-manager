@@ -20,6 +20,7 @@ const path = require('path');
 const CALENDAR = [
   ['au-1953', 'Melbourne'],
   ['sa-2021', 'Yeda'],
+  ['us-2022', 'Miami'],
   ['jp-1962', 'Suzuka'],
   ['az-2016', 'Bakú'],
   ['es-2026', 'Madrid'],

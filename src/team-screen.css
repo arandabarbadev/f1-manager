@@ -18,15 +18,34 @@
   flex-wrap: wrap;
   gap: 8px 14px;
   align-items: center;
-  padding: 10px 14px;
+  padding: 8px 14px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
 }
 
+/* Spec 020: navigation = side rail (desktop) with the race action
+   pinned at its bottom; on phones it becomes the bottom thumb bar. */
+.team-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
 .nav-tabs {
   display: flex;
+  flex-direction: column;
   gap: 6px;
-  flex-wrap: wrap;
+  padding: 12px 10px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  width: 176px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.nav-tabs .go-race-btn {
+  margin-top: auto;
+  font-weight: 600;
 }
 
 .nav-btn.active {
@@ -43,9 +62,36 @@
   margin-left: auto;
 }
 
-.header-right .go-race-btn {
-  padding: 6px 10px;
-  font-size: 13px;
+/* "Más" dropdown: secondary and destructive actions live here, out
+   of the main action's visual level (spec 020). */
+.more-wrap {
+  position: relative;
+}
+
+.more-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 50;
+  background: var(--panel);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-data);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+  display: grid;
+  min-width: 190px;
+}
+
+.more-menu .more-item {
+  border: none;
+  background: transparent;
+  text-align: left;
+  min-height: 36px;
+  border-radius: 0;
+}
+
+.more-menu .more-item:hover:not(:disabled) {
+  background: var(--btn-hover);
 }
 
 .budget-chip {
@@ -70,6 +116,54 @@
   gap: 16px;
   grid-template-columns: minmax(320px, 480px) 1fr;
   align-items: start;
+}
+
+/* Spec 020: the dashboard hero — livery edge, team name, big money
+   figure (display font), championship position. */
+.team-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  margin-bottom: 4px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+  border: 1px solid var(--accent-bg-border);
+  border-left: 8px solid var(--accent);
+}
+
+.hero-info {
+  min-width: 0;
+}
+
+.hero-name {
+  font-size: 17px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-pos {
+  color: var(--dim);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.hero-money {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--accent-text);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 2px;
 }
 
 .card {
@@ -407,7 +501,44 @@
 }
 
 @media (max-width: 860px) {
+  /* Phone: thumb bar at the bottom — sections + Carrera. */
+  .nav-tabs {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    overflow-x: auto;
+  }
+
+  .nav-tabs .nav-btn {
+    flex: none;
+    font-size: 12px;
+    padding: 6px 8px;
+    min-height: 34px;
+  }
+
+  .nav-tabs .go-race-btn {
+    margin-top: 0;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .team-main {
     grid-template-columns: 1fr;
+    padding-bottom: 88px;
+  }
+
+  .hero-money {
+    font-size: 28px;
   }
 }

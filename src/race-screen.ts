@@ -20,6 +20,7 @@ import { showGuideOnce } from './guide';
 import { buildTrackSampler, Point, TrackSampler } from './track-path';
 import { lateralTarget, stepLateral } from './racing-line';
 import { createNoticeHub } from './notices';
+import { assignDriverCodes } from './driver-codes';
 
 // ============================================================
 // RACE SCREEN (Phase 2)
@@ -97,22 +98,22 @@ export function createRaceScreen(
   root.className = 'race-screen';
   root.innerHTML = `
     <header class="race-header">
-      <div class="race-title">
+      <div class="race-info">
         <span class="race-name"></span>
         <span class="race-lap"></span>
-      </div>
-      <div class="race-meta">
         <span class="race-weather"></span>
         <span class="race-clock"></span>
       </div>
       <div class="race-controls">
         <button type="button" class="btn exit-btn">Mi Equipo</button>
-        <button type="button" class="btn pause-btn"></button>
-        <button type="button" class="btn speed-btn" data-speed="1">1x</button>
-        <button type="button" class="btn speed-btn" data-speed="5">5x</button>
-        <button type="button" class="btn speed-btn" data-speed="10">10x</button>
-        <button type="button" class="btn speed-btn" data-speed="20">20x</button>
         <button type="button" class="btn restart-btn">Nueva carrera</button>
+        <div class="speed-group">
+          <button type="button" class="btn pause-btn"></button>
+          <button type="button" class="btn speed-btn" data-speed="1">1x</button>
+          <button type="button" class="btn speed-btn" data-speed="5">5x</button>
+          <button type="button" class="btn speed-btn" data-speed="10">10x</button>
+          <button type="button" class="btn speed-btn" data-speed="20">20x</button>
+        </div>
         <button type="button" class="btn theme-btn"></button>
       </div>
     </header>
@@ -127,7 +128,7 @@ export function createRaceScreen(
         </div>
         <div class="flag-indicator hidden"></div>
         <div class="results-overlay hidden">
-          <div class="results-panel">
+          <div class="results-panel cut">
             <h2 class="results-title">Carrera terminada</h2>
             <div class="results-list"></div>
             <div class="finance-list"></div>
@@ -760,6 +761,8 @@ export function createRaceScreen(
   function buildStandings(): void {
     standingsEl.innerHTML = '';
     rows.clear();
+    // Spec 020: broadcast codes for the tower, unique per grid.
+    const codes = assignDriverCodes(state.drivers);
     for (const car of state.cars) {
       const li = document.createElement('li');
       // Spec 015: tyre compound + wear are the player's own strategy
@@ -767,26 +770,29 @@ export function createRaceScreen(
       // empty.
       li.className =
         'standing-row' + (car.isPlayerControlled ? ' player' : ' no-tyre');
+      // Spec 020 timing-tower row: position, team stripe, 3-letter
+      // code, gap, tyre ring. Full name + number live on the tooltip.
       li.innerHTML = `
         <span class="pos"></span>
-        <span class="num"></span>
-        <span class="tcolor"></span>
-        <span class="dname"></span>
+        <span class="stripe"></span>
+        <span class="code"></span>
         <span class="gap"></span>
-        <span class="tyre"></span>
+        <span class="tyre-ico"></span>
         <span class="wear"><span class="wear-fill"></span></span>
         <span class="pitflag">BOX</span>`;
       const team = teamById(car.teamId);
-      (li.querySelector<HTMLElement>('.tcolor')!).style.background = team.color;
-      (li.querySelector<HTMLElement>('.num')!).textContent =
-        String(driverById(car.driverId).number ?? '');
-      (li.querySelector<HTMLElement>('.dname')!).textContent =
-        driverById(car.driverId).name + (car.isPlayerControlled ? ' (tú)' : '');
+      const driver = driverById(car.driverId);
+      (li.querySelector<HTMLElement>('.stripe')!).style.background = team.color;
+      (li.querySelector<HTMLElement>('.code')!).textContent =
+        codes.get(driver.id) ?? '';
+      li.title =
+        `${driver.name} · #${driver.number ?? ''}` +
+        (car.isPlayerControlled ? ' (tú)' : '');
       rows.set(car.driverId, {
         root: li,
         pos: li.querySelector<HTMLElement>('.pos')!,
         gap: li.querySelector<HTMLElement>('.gap')!,
-        tyre: li.querySelector<HTMLElement>('.tyre')!,
+        tyre: li.querySelector<HTMLElement>('.tyre-ico')!,
         wearFill: li.querySelector<HTMLElement>('.wear-fill')!,
         pitflag: li.querySelector<HTMLElement>('.pitflag')!,
       });
@@ -805,10 +811,10 @@ export function createRaceScreen(
       row.pos.textContent = String(car.position);
       row.gap.textContent = car.status === 'dnf' ? 'DNF' : formatGap(car, leaderLap);
       if (car.isPlayerControlled) {
-        // Spec 015: only the player's cars show rubber strategy; the
-        // rivals' cells stay empty (class no-tyre hides the bar).
+        // Spec 015/020: only the player's cars show rubber strategy;
+        // the rivals' ring stays empty (class no-tyre hides it).
         row.tyre.textContent = COMPOUND_LABEL[car.tyre.compound];
-        row.tyre.className = 'tyre ' + car.tyre.compound;
+        row.tyre.className = 'tyre-ico ' + car.tyre.compound;
         const wear = Math.round(car.tyre.wear);
         row.wearFill.style.width = wear + '%';
         row.wearFill.className =
@@ -824,9 +830,9 @@ export function createRaceScreen(
       // Spec 019: your race place, left of the rubber — strategy
       // info exactly where the strategy is decided.
       box.pos.textContent = car.status === 'dnf' ? 'DNF' : `P${car.position}`;
-      // Spec 015: current rubber next to the compound buttons.
+      // Spec 015/020: current rubber as a ring, next to the buttons.
       box.tyre.textContent = COMPOUND_LABEL[car.tyre.compound];
-      box.tyre.className = 'tyre ' + car.tyre.compound;
+      box.tyre.className = 'tyre-ico ' + car.tyre.compound;
       const wear = Math.round(car.tyre.wear);
       box.wearFill.style.width = wear + '%';
       box.wearFill.className =
@@ -894,7 +900,7 @@ export function createRaceScreen(
     const compounds: TyreCompound[] = ['soft', 'medium', 'hard', 'inter', 'wet'];
     for (const car of state.cars.filter((c) => c.isPlayerControlled)) {
       const box = document.createElement('div');
-      box.className = 'pit-box';
+      box.className = 'pit-box cut';
       const title = document.createElement('div');
       title.className = 'pit-name';
       title.textContent = `${driverById(car.driverId).name} — cambiar a:`;
@@ -904,7 +910,7 @@ export function createRaceScreen(
       tyreLine.className = 'pit-tyre';
       tyreLine.innerHTML = `
         <span class="pit-pos"></span>
-        <span class="tyre"></span>
+        <span class="tyre-ico"></span>
         <span class="wear"><span class="wear-fill"></span></span>
         <span class="pit-tyre-pct"></span>`;
       const btns = document.createElement('div');
@@ -913,7 +919,10 @@ export function createRaceScreen(
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn pit-btn';
-        btn.textContent = COMPOUND_LABEL[compound];
+        // Spec 020: the compound is a RING with its letter — shape and
+        // letter identify it even without color.
+        btn.innerHTML =
+          `<span class="tyre-ico ${compound}">${COMPOUND_LABEL[compound]}</span>`;
         btn.title = COMPOUND_TITLE[compound];
         btn.addEventListener('click', () => {
           // Player command: queued NOW, executed when the car crosses
@@ -943,7 +952,7 @@ export function createRaceScreen(
         carDriverId: car.driverId,
         status,
         buttons,
-        tyre: tyreLine.querySelector<HTMLElement>('.tyre')!,
+        tyre: tyreLine.querySelector<HTMLElement>('.tyre-ico')!,
         wearFill: tyreLine.querySelector<HTMLElement>('.wear-fill')!,
         pct: tyreLine.querySelector<HTMLElement>('.pit-tyre-pct')!,
         pos: tyreLine.querySelector<HTMLElement>('.pit-pos')!,
