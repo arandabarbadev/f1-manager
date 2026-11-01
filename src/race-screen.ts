@@ -1,7 +1,7 @@
 import './race-screen.css';
 import { RaceCarState, RaceState, TyreCompound, Weather, WeekendEvent } from './types';
 import type { RaceEvent } from './types';
-import { EVENT_ORDER, eventLabel, eventPrizeFactor, standingsForEvent } from './weekend';
+import { eventLabel, eventOrderFor, eventPrizeFactor, standingsForEvent } from './weekend';
 import {
   getFinalClassification,
   isRaceFinished,
@@ -67,6 +67,7 @@ interface StandingRow {
   root: HTMLLIElement;
   pos: HTMLElement;
   gap: HTMLElement;
+  delta: HTMLElement;
   tyre: HTMLElement;
   wearFill: HTMLElement;
   pitflag: HTMLElement;
@@ -126,10 +127,20 @@ export function createRaceScreen(
           </div>
           <div class="lights-label">Formación</div>
         </div>
+        <div class="gp-intro hidden">
+          <div class="gp-intro-card cut">
+            <h3 class="gp-intro-name"></h3>
+            <div class="gp-intro-laps"></div>
+            <canvas class="gp-intro-map" width="240" height="150"></canvas>
+            <div class="gp-intro-hint">Toca para empezar</div>
+          </div>
+        </div>
         <div class="flag-indicator hidden"></div>
         <div class="results-overlay hidden">
           <div class="results-panel cut">
             <h2 class="results-title">Carrera terminada</h2>
+            <div class="podium"></div>
+            <div class="my-results"></div>
             <div class="results-list"></div>
             <div class="finance-list"></div>
             <div class="results-total"></div>
@@ -175,6 +186,14 @@ export function createRaceScreen(
   const lightsEl = root.querySelector<HTMLElement>('.start-lights')!;
   const lightEls = [...root.querySelectorAll<HTMLElement>('.start-lights .light')];
   const lightsLabelEl = root.querySelector<HTMLElement>('.lights-label')!;
+  // Spec 022: GP presentation card + broadcast podium blocks.
+  const introEl = root.querySelector<HTMLElement>('.gp-intro')!;
+  const introNameEl = introEl.querySelector<HTMLElement>('.gp-intro-name')!;
+  const introLapsEl = introEl.querySelector<HTMLElement>('.gp-intro-laps')!;
+  const introMapEl = introEl.querySelector<HTMLCanvasElement>('.gp-intro-map')!;
+  const podiumEl = root.querySelector<HTMLElement>('.podium')!;
+  const myResultsEl = root.querySelector<HTMLElement>('.my-results')!;
+  introEl.addEventListener('click', endIntro);
   const feedListEl = root.querySelector<HTMLUListElement>('.feed-list')!;
   const exitBtn = root.querySelector<HTMLButtonElement>('.exit-btn')!;
   if (onExit) exitBtn.addEventListener('click', onExit);
@@ -253,6 +272,16 @@ export function createRaceScreen(
     hideTimer: number;
   }
   let lights: LightsPhase = { active: false, lit: 0, nextAt: 0, outAt: 0, hideTimer: 0 };
+
+  // Spec 022: Grand Prix presentation card, BEFORE the lights. While
+  // active the race has not started: no ticks, no clock, no lights
+  // (same freeze the formation lights already use).
+  interface IntroPhase {
+    active: boolean;
+    until: number;
+    guided: boolean;
+  }
+  let intro: IntroPhase = { active: false, until: 0, guided: false };
 
   // Spec 012: race-control feed — last events, newest first, capped.
   function addFeed(text: string, kind: 'incident' | 'overtake' | 'pit'): void {
@@ -335,6 +364,9 @@ export function createRaceScreen(
   let pendingPit = new Set<string>();
   const rows = new Map<string, StandingRow>();
   const pitBoxes: PitBox[] = [];
+  // Spec 022: where each driver STARTED — the live tower's gained/lost
+  // places are measured against this grid order.
+  const gridStartPos = new Map<string, number>();
 
   const teamById = (id: string) => state.teams.find((t) => t.id === id)!;
   const driverById = (id: string) => state.drivers.find((d) => d.id === id)!;
@@ -370,25 +402,15 @@ export function createRaceScreen(
       gridByCar.set(car.driverId, i + 1); // cars array is grid order
     });
     lastLateralStepAt = 0;
-    startLights();
+    // Spec 022: the GP presentation opens the show; the lights (and
+    // the race behind them) start when it ends.
+    startIntro();
     buildStandings();
     buildPitPanel();
     updateControls();
     updateHeader();
     updateHud();
     resize();
-    // First-time guide for the race screen (once per browser).
-    showGuideOnce(
-      'race',
-      'Carrera y boxes en 4 ideas',
-      [
-        'La carrera corre sola: pausa y velocidades (1x-20x) arriba.',
-        'Tus paradas se ordenan en "Mis boxes": la goma que llevas está al lado de los botones.',
-        'La tabla muestra el hueco de los 20; la goma y su desgaste, solo de tus pilotos.',
-        'Cada círculo lleva su dorsal pintado dentro: identifícalos sin depender de los colores.',
-        'Si cambia el tiempo salta un aviso: I (intermedios) para lluvia ligera, W para la fuerte.',
-      ]
-    );
   }
 
   // ---- Track drawing (offscreen layer) ----
@@ -463,6 +485,65 @@ export function createRaceScreen(
     lightsEl.classList.remove('hidden', 'out');
     lightsLabelEl.textContent = 'Formación';
     lightEls.forEach((el) => el.classList.remove('on'));
+  }
+
+  // ---- Spec 022: Grand Prix presentation ----
+  // A card with the circuit name, lap count and silhouette right
+  // before the lights — short and skippable; the race itself (clock,
+  // ticks, lights) only starts when it is done.
+  const INTRO_MS = 2600;
+
+  function drawIntroMap(): void {
+    const c = introMapEl.getContext('2d')!;
+    c.clearRect(0, 0, introMapEl.width, introMapEl.height);
+    const margin = 14;
+    const sx = introMapEl.width - margin * 2;
+    const sy = introMapEl.height - margin * 2;
+    c.beginPath();
+    state.track.path.forEach((p, i) => {
+      const x = margin + p.x * sx;
+      const y = margin + p.y * sy;
+      if (i === 0) c.moveTo(x, y);
+      else c.lineTo(x, y);
+    });
+    c.closePath();
+    c.lineWidth = 5;
+    c.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+    c.stroke(); // halo, same language as the big track
+    c.lineWidth = 2.5;
+    c.strokeStyle = '#ffffff';
+    c.stroke();
+  }
+
+  function startIntro(): void {
+    intro = { active: true, until: performance.now() + INTRO_MS, guided: false };
+    introNameEl.textContent = state.track.name;
+    introLapsEl.textContent = `${state.track.totalLaps} vueltas`;
+    drawIntroMap();
+    introEl.classList.remove('hidden');
+  }
+
+  function endIntro(): void {
+    if (!intro.active) return;
+    intro.active = false;
+    introEl.classList.add('hidden');
+    startLights();
+    // The first-time guide waits for the presentation: never two
+    // overlays fighting for the same screen.
+    if (!intro.guided) {
+      intro.guided = true;
+      showGuideOnce(
+        'race',
+        'Carrera y boxes en 4 ideas',
+        [
+          'La carrera corre sola: pausa y velocidades (1x-20x) arriba.',
+          'Tus paradas se ordenan en "Mis boxes": la goma que llevas está al lado de los botones.',
+          'La tabla muestra el hueco de los 20; la goma y su desgaste, solo de tus pilotos.',
+          'Cada círculo lleva su dorsal pintado dentro: identifícalos sin depender de los colores.',
+          'Si cambia el tiempo salta un aviso: I (intermedios) para lluvia ligera, W para la fuerte.',
+        ]
+      );
+    }
   }
 
   function advanceLights(now: number): void {
@@ -578,6 +659,14 @@ export function createRaceScreen(
   // ---- Simulation loop (own interval, decoupled from rendering) ----
 
   window.setInterval(() => {
+    // Spec 022: during the GP presentation the race has not started
+    // (auto-end after the timeout; a tap ends it too).
+    if (intro.active) {
+      if (performance.now() >= intro.until) endIntro();
+      snapshotShadow();
+      lastTickAt = performance.now();
+      return;
+    }
     // Spec 012: while the start lights are on there is no race yet —
     // anchor the render like the pause does (clock stays at 0).
     if (lights.active) {
@@ -632,7 +721,7 @@ export function createRaceScreen(
     }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(trackLayer, 0, 0);
-    advanceLights(now);
+    if (!intro.active) advanceLights(now);
     updateLaterals(now);
     const alpha = Math.min(1, (now - lastTickAt) / TICK_MS);
     drawCars(alpha);
@@ -770,16 +859,20 @@ export function createRaceScreen(
       // empty.
       li.className =
         'standing-row' + (car.isPlayerControlled ? ' player' : ' no-tyre');
-      // Spec 020 timing-tower row: position, team stripe, 3-letter
-      // code, gap, tyre ring. Full name + number live on the tooltip.
+      // Spec 020/022 timing-tower row: position, team stripe, code,
+      // gained/lost places, gap, tyre ring. Name + number on the
+      // tooltip.
       li.innerHTML = `
         <span class="pos"></span>
         <span class="stripe"></span>
         <span class="code"></span>
+        <span class="delta"></span>
         <span class="gap"></span>
         <span class="tyre-ico"></span>
         <span class="wear"><span class="wear-fill"></span></span>
         <span class="pitflag">BOX</span>`;
+      // Where this driver started (the cars array IS the grid order).
+      gridStartPos.set(car.driverId, car.position);
       const team = teamById(car.teamId);
       const driver = driverById(car.driverId);
       (li.querySelector<HTMLElement>('.stripe')!).style.background = team.color;
@@ -792,6 +885,7 @@ export function createRaceScreen(
         root: li,
         pos: li.querySelector<HTMLElement>('.pos')!,
         gap: li.querySelector<HTMLElement>('.gap')!,
+        delta: li.querySelector<HTMLElement>('.delta')!,
         tyre: li.querySelector<HTMLElement>('.tyre-ico')!,
         wearFill: li.querySelector<HTMLElement>('.wear-fill')!,
         pitflag: li.querySelector<HTMLElement>('.pitflag')!,
@@ -809,6 +903,12 @@ export function createRaceScreen(
       // Re-append in position order (appendChild moves existing nodes).
       standingsEl.appendChild(row.root);
       row.pos.textContent = String(car.position);
+      // Spec 022: gained/lost places vs the starting grid — arrow AND
+      // sign, readable without color. Where you started, nothing.
+      const gained = (gridStartPos.get(car.driverId) ?? car.position) - car.position;
+      row.delta.textContent =
+        car.status === 'dnf' ? '' : gained > 0 ? `▲${gained}` : gained < 0 ? `▼${-gained}` : '';
+      row.delta.className = 'delta' + (gained > 0 ? ' up' : gained < 0 ? ' down' : '');
       row.gap.textContent = car.status === 'dnf' ? 'DNF' : formatGap(car, leaderLap);
       if (car.isPlayerControlled) {
         // Spec 015/020: only the player's cars show rubber strategy;
@@ -1085,8 +1185,10 @@ export function createRaceScreen(
           overlaySeasonBtn.classList.remove('hidden');
         }
       } else {
-        // Spec 011: chain to the next weekend act (quali -> S1 -> S2).
-        const next = EVENT_ORDER[EVENT_ORDER.indexOf(event) + 1] ?? 'race';
+        // Spec 011/021: chain to the next weekend act OF THIS ROUND's
+        // order (non-sprint rounds jump quali -> race).
+        const order = eventOrderFor(career.calendar[career.currentRaceIndex]);
+        const next = order[order.indexOf(event) + 1] ?? 'race';
         nextLabel = `Siguiente: ${eventLabel(next)}`;
         overlayContinueBtn.textContent = `Continuar a ${eventLabel(next)}`;
         overlayContinueBtn.classList.remove('hidden');
@@ -1096,6 +1198,46 @@ export function createRaceScreen(
     }
 
     resultsTitleEl.textContent = `${eventLabel(event)}: resultado`;
+    // Spec 022: the broadcast finish — a podium with the classified
+    // top 3 (1-3 slots, no weird gaps when many cars are out) and the
+    // player's cars ALWAYS in big, on the podium or not.
+    const codes = assignDriverCodes(state.drivers);
+    const finalOrder = getFinalClassification(state);
+    const podiumCars = finalOrder.filter((c) => c.status === 'racing').slice(0, 3);
+    podiumEl.innerHTML = '';
+    // Broadcast order: P2 — P1 — P3 (the winner stands tallest).
+    for (const car of [podiumCars[1], podiumCars[0], podiumCars[2]]) {
+      if (!car) continue;
+      const driver = driverById(car.driverId);
+      const slot = document.createElement('div');
+      slot.className =
+        'podium-slot p' + car.position + (car.isPlayerControlled ? ' mine' : '');
+      slot.innerHTML = `
+        <span class="podium-pos">${car.position}</span>
+        <span class="podium-code"></span>
+        <span class="podium-name"></span>
+        <span class="podium-team"></span>`;
+      slot.querySelector<HTMLElement>('.podium-code')!.textContent =
+        (codes.get(driver.id) ?? '') + (car.isPlayerControlled ? ' ★' : '');
+      slot.querySelector<HTMLElement>('.podium-name')!.textContent = driver.name;
+      const teamEl = slot.querySelector<HTMLElement>('.podium-team')!;
+      teamEl.textContent = teamById(car.teamId).name;
+      teamEl.style.borderTopColor = teamById(car.teamId).color;
+      podiumEl.appendChild(slot);
+    }
+    myResultsEl.innerHTML = '';
+    for (const car of finalOrder.filter((c) => c.isPlayerControlled)) {
+      const mine = document.createElement('div');
+      mine.className = 'my-result';
+      mine.innerHTML = `
+        <span class="my-pos"></span>
+        <span class="my-name"></span>`;
+      mine.querySelector<HTMLElement>('.my-pos')!.textContent =
+        car.status === 'dnf' ? 'DNF' : `P${car.position}`;
+      mine.querySelector<HTMLElement>('.my-name')!.textContent =
+        driverById(car.driverId).name;
+      myResultsEl.appendChild(mine);
+    }
     resultsListEl.innerHTML = '';
     for (const r of playerResults) {
       const row = document.createElement('div');

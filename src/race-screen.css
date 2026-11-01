@@ -140,6 +140,111 @@
   padding: 18px 20px;
   width: min(92vw, 380px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  /* Spec 022: podium + list can outgrow a phone screen; the actions
+     stay reachable with the thumb at the end of the scroll. */
+  max-height: min(92vh, 660px);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Spec 022: broadcast podium (P2 — P1 — P3, winner tallest) + the
+   player's cars always in big. */
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+}
+
+.podium-slot {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-data);
+}
+
+.podium-slot.p1 {
+  padding-bottom: 20px;
+  background: var(--accent-bg);
+  border-color: var(--accent-bg-border);
+}
+
+.podium-slot.mine {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.podium-pos {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent-text);
+}
+
+.podium-code {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.podium-name {
+  font-size: 11px;
+  color: var(--dim);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.podium-team {
+  font-size: 10px;
+  color: var(--dim);
+  border-top: 3px solid var(--dim);
+  padding-top: 2px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.my-result {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-bg-border);
+  border-radius: var(--radius-data);
+}
+
+.my-result .my-pos {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--accent-text);
+  white-space: nowrap;
+}
+
+.my-result .my-name {
+  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .results-panel h2 {
@@ -283,11 +388,12 @@
   padding: 0;
 }
 
-/* Spec 020: timing-tower row — [position][team stripe][3-letter
-   code][gap][tyre ring][wear][pit flag]. Full name on the tooltip. */
+/* Spec 020/022: timing-tower row — [position][team stripe][3-letter
+   code][gained/lost][gap][tyre ring][wear][pit flag]. Full name on
+   the tooltip. */
 .standing-row {
   display: grid;
-  grid-template-columns: 1.9em 4px 3.2ch 1fr 20px 3.4em 2.6em;
+  grid-template-columns: 1.9em 4px 3.2ch 2.4em 1fr 20px 3.4em 2.6em;
   gap: 6px;
   align-items: center;
   padding: 5px 6px;
@@ -320,6 +426,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Spec 022: gained/lost places vs the grid — arrow + sign (the shape
+   carries the meaning, color only assists). Empty when unchanged. */
+.delta {
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.delta.up {
+  color: var(--green-text);
+}
+
+.delta.down {
+  color: var(--red);
 }
 
 /* Race number (spec 008): bold so the car is identifiable without
@@ -441,6 +564,54 @@
 
 .start-lights.out .lights-label {
   color: var(--green-text);
+}
+
+/* Spec 022: Grand Prix presentation card — circuit, laps and
+   silhouette before the lights. Below the notices (z-40) and the
+   first-time guide (z-60) so nothing stacks on it. */
+.gp-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
+  cursor: pointer;
+}
+
+.gp-intro.hidden {
+  display: none;
+}
+
+.gp-intro-card {
+  background: var(--panel);
+  border: 1px solid var(--accent-bg-border);
+  padding: 16px 22px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.5));
+}
+
+.gp-intro-name {
+  margin: 0;
+  font-size: 18px;
+}
+
+.gp-intro-laps {
+  color: var(--dim);
+  font-size: 13px;
+}
+
+.gp-intro-map {
+  max-width: 100%;
+}
+
+.gp-intro-hint {
+  color: var(--dim);
+  font-size: 11px;
 }
 
 /* Race control feed (spec 012): last events under the standings */
@@ -619,7 +790,7 @@
     font-size: 11px;
     padding: 3px 4px;
     gap: 4px;
-    grid-template-columns: 1.6em 3px 2.8ch 1fr 16px 2.8em 2em;
+    grid-template-columns: 1.6em 3px 2.6ch 1.8em 1fr 16px 2.6em 2em;
   }
 
   .standing-row .pos {
