@@ -50,12 +50,14 @@ export const DEV_LABELS: Record<DevId, string> = {
 //   seguridad   -> reliability
 //   volante     -> reliability
 export const DEV_COST_PER_POINT = 15; // M€ base (engineers discount applies)
+export const DEV_COST_STEP = 4; // M€ added per level (spec 021, was ×(n+1))
 export const DEV_MAX_LEVEL = 15; // spec 009 (was 10)
 
-// Cost of the NEXT development level: each level is more expensive
-// than the previous one (spec 009): 15, 30, 45... M€.
+// Cost of the NEXT development level: 15, 19, 23... M€ — each level
+// only 4 M€ pricier than the previous (spec 021; pre-021 it rose 15
+// M€ per level and a full category cost 1200 M€, now 645).
 export function devCost(currentLevel: number): number {
-  return DEV_COST_PER_POINT * (currentLevel + 1);
+  return DEV_COST_PER_POINT + DEV_COST_STEP * currentLevel;
 }
 export const MAX_CAR_STAT = 95; // cap for effective aero/engine/chassis
 export const PLAYER_START_STAT = 65; // player cars start below the rival average (60-85)

@@ -130,6 +130,9 @@ export function createTeamScreen(
       <main class="team-main">
         <section class="card cut tab-panel"></section>
       </main>
+    </div>
+    <div class="race-bar">
+      <button type="button" class="btn primary go-race-btn bar-race-btn"></button>
     </div>`;
   container.appendChild(root);
 
@@ -138,7 +141,9 @@ export function createTeamScreen(
 
   const panel = root.querySelector<HTMLElement>('.tab-panel')!;
   const budgetValueEl = root.querySelector<HTMLElement>('.budget-value')!;
-  const goRaceBtn = root.querySelector<HTMLButtonElement>('.go-race-btn')!;
+  // Spec 021: two race buttons, one per layout — side rail (desktop)
+  // and the phone's bottom bar (which holds ONLY the race action).
+  const goRaceBtns = [...root.querySelectorAll<HTMLButtonElement>('.go-race-btn')];
   const themeBtn = root.querySelector<HTMLButtonElement>('.theme-btn')!;
   const resetBtn = root.querySelector<HTMLButtonElement>('.reset-season-btn')!;
   const slotsBtn = root.querySelector<HTMLButtonElement>('.slots-btn')!;
@@ -234,20 +239,15 @@ export function createTeamScreen(
   });
 
   function updateRaceButton(): void {
-    if (isSeasonComplete(career)) {
-      goRaceBtn.textContent = 'Ver temporada';
-    } else {
-      const track =
-        getTrackById(career.calendar[career.currentRaceIndex]) ?? ALL_TRACKS[0];
-      // Spec 011: the button names the round's pending weekend act.
-      const pending = pendingEvent(career) ?? 'race';
-      goRaceBtn.textContent = `${eventLabel(pending)} · R${Math.min(
-        career.currentRaceIndex + 1,
-        career.calendar.length
-      )}: ${track.name}`;
-    }
+    const label = isSeasonComplete(career)
+      ? 'Ver temporada'
+      : `${eventLabel(pendingEvent(career) ?? 'race')} · R${Math.min(
+          career.currentRaceIndex + 1,
+          career.calendar.length
+        )}: ${(getTrackById(career.calendar[career.currentRaceIndex]) ?? ALL_TRACKS[0]).name}`;
+    for (const btn of goRaceBtns) btn.textContent = label;
   }
-  goRaceBtn.addEventListener('click', () => onGoRace());
+  for (const btn of goRaceBtns) btn.addEventListener('click', () => onGoRace());
 
   // ---- Tabs ----
   function setTab(next: TabId): void {

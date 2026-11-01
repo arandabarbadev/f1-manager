@@ -12,6 +12,7 @@ import { LATERAL_MAX, lateralTarget, stepLateral } from './racing-line';
 import {
   applyPilotUpgrade,
   createDefaultRoster,
+  devCost,
   driverVal,
   MAX_DRIVER_STAT,
   PILOT_ATTRS,
@@ -19,6 +20,8 @@ import {
   setDriverNumber,
 } from './roster';
 import { assignDriverCodes, driverCodeBase } from './driver-codes';
+import { createDefaultCareer } from './career';
+import { eventOrderFor, hasSprint, pendingEvent } from './weekend';
 import {
   DIFFICULTY_ORDER,
   DIFFICULTY_PRESETS,
@@ -402,6 +405,52 @@ function pilotsSelfCheck(lines: string[]): void {
   );
 }
 
+// Acceptance check 9 (spec 021): real weekend format — sprints only at
+// the real sprint venues, the rest go quali -> race; development
+// prices rise 4 M€ per level.
+function formatSelfCheck(lines: string[]): void {
+  let failures = 0;
+  const expect = (ok: boolean, what: string): void => {
+    if (!ok) {
+      failures++;
+      lines.push('FAIL formato: ' + what);
+    }
+  };
+
+  expect(hasSprint('gp-miami') && hasSprint('gp-spa') && hasSprint('gp-austin') && hasSprint('gp-interlagos'), 'sprint en Miami/Spa/Austin/Interlagos');
+  expect(!hasSprint('gp-jerez') && !hasSprint('gp-melbourne') && !hasSprint('gp-monaco'), 'sin sprint en el resto');
+  expect(eventOrderFor('gp-melbourne').length === 2, 'Melbourne: quali -> carrera');
+  expect(eventOrderFor('gp-miami').length === 4, 'Miami: quali -> sprints -> carrera');
+
+  const career = createDefaultCareer(200, 'hard');
+  career.calendar = ['gp-melbourne'];
+  career.currentRaceIndex = 0;
+  career.seasonResults = [];
+  expect(pendingEvent(career) === 'quali', 'ronda normal: primero la clasificación');
+  career.seasonResults = [{ trackId: 'gp-melbourne', event: 'quali', position: 1, prize: 0 }];
+  expect(pendingEvent(career) === 'race', 'ronda normal tras la quali: CARRERA (sin sprints)');
+  career.calendar = ['gp-miami'];
+  career.seasonResults = [{ trackId: 'gp-miami', event: 'quali', position: 1, prize: 0 }];
+  expect(pendingEvent(career) === 'sprint1', 'ronda sprint tras la quali: Sprint 1');
+  // Legacy save: sprints recorded at a round that no longer hosts them.
+  career.calendar = ['gp-melbourne'];
+  career.seasonResults = (['quali', 'sprint1', 'sprint2', 'race'] as const).map((ev) => ({
+    trackId: 'gp-melbourne',
+    event: ev,
+    position: 1,
+    prize: 0,
+  }));
+  expect(pendingEvent(career) === null, 'save vieja con sprints: fin de semana completo');
+
+  expect(devCost(0) === 15 && devCost(1) === 19 && devCost(2) === 23, 'mejoras del coche 15/19/23 M€');
+
+  lines.push(
+    failures === 0
+      ? 'Formato check: sprints solo en las 4 rondas reales OK | quali->carrera en el resto OK | saves viejos OK | mejoras 15/19/23 OK'
+      : 'Formato check: ' + failures + ' FALLOS'
+  );
+}
+
 export function runTestHarness(): string {
   const state: RaceState = buildTestRaceState();
 
@@ -517,6 +566,9 @@ export function runTestHarness(): string {
 
   // Acceptance check 8 (spec 020): broadcast codes.
   codesSelfCheck(lines);
+
+  // Acceptance check 9 (spec 021): weekend format and upgrade prices.
+  formatSelfCheck(lines);
 
   return lines.join('\n');
 }

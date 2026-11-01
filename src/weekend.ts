@@ -3,14 +3,34 @@ import type { CareerState, SeasonResult } from './career';
 import { pointsForPosition, RaceStandingEntry } from './championship';
 
 // ============================================================
-// WEEKEND FORMAT (spec 011): each round is quali -> Sprint 1 ->
-// Sprint 2 -> race. Everything is DERIVED from the recorded
-// season results (no extra persisted state): the pending event is
-// the first one without a result for the current round, and each
-// grid comes from the previous event's classification.
+// WEEKEND FORMAT (specs 011/021): everything is DERIVED from the
+// recorded season results (no extra persisted state): the pending
+// event is the first one without a result for the current round, and
+// each grid comes from the previous event's classification.
+// Spec 021: only the rounds that host a sprint in the real world run
+// one — the rest go straight from quali to the race.
 // ============================================================
 
 export const EVENT_ORDER: readonly WeekendEvent[] = ['quali', 'sprint1', 'sprint2', 'race'];
+const ORDER_WITHOUT_SPRINT: readonly WeekendEvent[] = ['quali', 'race'];
+
+// Real sprint venues present in the game (2023-2025 format: 6 rounds
+// a season, of which the game carries Miami, Spa, Austin, Interlagos).
+export const SPRINT_ROUND_IDS: readonly string[] = [
+  'gp-miami',
+  'gp-spa',
+  'gp-austin',
+  'gp-interlagos',
+];
+
+export function hasSprint(trackId: string): boolean {
+  return SPRINT_ROUND_IDS.includes(trackId);
+}
+
+// The weekend order of one specific round.
+export function eventOrderFor(trackId: string): readonly WeekendEvent[] {
+  return hasSprint(trackId) ? EVENT_ORDER : ORDER_WITHOUT_SPRINT;
+}
 
 export function eventLabel(event: WeekendEvent): string {
   switch (event) {
@@ -86,15 +106,17 @@ export function eventRainChance(event: WeekendEvent, raceChance: number): number
 }
 
 // The event of the current round that is still to be run: the first
-// one of the weekend without a recorded result. If the whole weekend
-// is done, returns null (the calendar has moved on).
+// one of THE ROUND'S weekend order without a recorded result. If the
+// whole weekend is done, returns null (the calendar has moved on).
+// Spec 021: rounds without a sprint skip both sprints — legacy saves
+// with sprint results at those rounds simply find them all done.
 export function pendingEvent(career: CareerState): WeekendEvent | null {
   const trackId = career.calendar[career.currentRaceIndex];
   if (!trackId) return null;
   const done = new Set(
     career.seasonResults.filter((r) => r.trackId === trackId).map((r) => r.event)
   );
-  return EVENT_ORDER.find((ev) => !done.has(ev)) ?? null;
+  return eventOrderFor(trackId).find((ev) => !done.has(ev)) ?? null;
 }
 
 // Grid for an event, as a list of driver ids (fastest first):
@@ -109,8 +131,11 @@ export function gridForEvent(
 ): string[] | null {
   if (event === 'quali') return null; // caller sorts by expected pace
   const trackId = career.calendar[career.currentRaceIndex];
-  const idx = EVENT_ORDER.indexOf(event);
-  const previous = EVENT_ORDER[idx - 1];
+  // Spec 021: the chain follows THIS round's order (a race grid at a
+  // non-sprint round comes from the quali standings).
+  const order = eventOrderFor(trackId);
+  const idx = order.indexOf(event);
+  const previous = order[idx - 1];
   const result = career.seasonResults.find(
     (r: SeasonResult) => r.trackId === trackId && r.event === previous
   );
