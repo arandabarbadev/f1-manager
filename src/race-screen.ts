@@ -311,6 +311,39 @@ export function createRaceScreen(
   // started either — same freeze as intro/lights (clock stays at 0).
   let pickActive = false;
 
+  // Spec 026: screen wake lock — while the race runs the phone must
+  // not sleep; released on pause/finish/hide/teardown. Silent when the
+  // browser does not support it (the game plays exactly the same).
+  let wakeLockSentinel: WakeLockSentinel | null = null;
+  // Spec 026: paused by hiding the app (not by the player) — only that
+  // case explains itself with a notice when the player comes back.
+  let autoPaused = false;
+
+  async function acquireWakeLock(): Promise<void> {
+    try {
+      if (!('wakeLock' in navigator)) return;
+      if (document.visibilityState !== 'visible') return;
+      if (state.isPaused || finished || wakeLockSentinel) return;
+      const sentinel = await navigator.wakeLock.request('screen');
+      wakeLockSentinel = sentinel;
+      sentinel.addEventListener('release', () => {
+        if (wakeLockSentinel === sentinel) wakeLockSentinel = null;
+      });
+    } catch {
+      // Denied or unavailable: nothing breaks, nothing is announced.
+    }
+  }
+
+  function releaseWakeLock(): void {
+    const sentinel = wakeLockSentinel;
+    wakeLockSentinel = null;
+    try {
+      void sentinel?.release();
+    } catch {
+      // already released by the system: fine
+    }
+  }
+
   // Spec 012: race-control feed — last events, newest first, capped.
   function addFeed(text: string, kind: 'incident' | 'overtake' | 'pit'): void {
     const li = document.createElement('li');
@@ -444,6 +477,9 @@ export function createRaceScreen(
     // Spec 025: the tyre card starts closed on every (re)build.
     pickActive = false;
     pickEl.classList.add('hidden');
+    // Spec 026: a rebuild starts with the phone back to normal.
+    autoPaused = false;
+    releaseWakeLock();
     // Spec 012: fresh lateral state and grid sides for this race.
     lateralByCar.clear();
     gridByCar.clear();
@@ -674,6 +710,7 @@ export function createRaceScreen(
       lightsEl.classList.add('out');
       lightsLabelEl.textContent = '¡Luces fuera!';
       lights.hideTimer = window.setTimeout(() => lightsEl.classList.add('hidden'), 900);
+      void acquireWakeLock(); // Spec 026: the race is on — keep the screen awake
     }
   }
 
@@ -770,7 +807,14 @@ export function createRaceScreen(
 
   // ---- Simulation loop (own interval, decoupled from rendering) ----
 
-  window.setInterval(() => {
+  const tickTimer = window.setInterval(() => {
+    // Spec 026: a screen swapped away (exit to "Mi Equipo" mid-race)
+    // kills this loop for good — nothing may run, earn or record
+    // unseen. The visibility listener below cleans up the rest.
+    if (!root.isConnected) {
+      window.clearInterval(tickTimer);
+      return;
+    }
     // Spec 022: during the GP presentation the race has not started
     // (auto-end after the timeout; a tap ends it too).
     if (intro.active) {
@@ -820,15 +864,50 @@ export function createRaceScreen(
     if (isRaceFinished(state)) {
       finished = true;
       state.isPaused = true;
+      releaseWakeLock(); // Spec 026: the phone goes back to normal
       awardPrizesAndShowResults();
       updateControls();
       updateHud();
     }
   }, TICK_MS);
 
+  // Spec 026: leaving the app (screen lock, app switch, hidden tab)
+  // pauses the race — it never runs unseen and never resumes alone.
+  const onVisibility = (): void => {
+    if (!root.isConnected) {
+      // The screen was swapped away: full teardown of this race.
+      window.clearInterval(tickTimer);
+      document.removeEventListener('visibilitychange', onVisibility);
+      releaseWakeLock();
+      return;
+    }
+    if (document.hidden) {
+      releaseWakeLock(); // the system releases it on hide anyway
+      if (!finished && !lights.active && !intro.active && !pickActive && !state.isPaused) {
+        state.isPaused = true;
+        autoPaused = true;
+        updateControls();
+      }
+      return;
+    }
+    // Back in view: still paused (the player resumes). One quiet
+    // notice when the pause was ours — none when it was the player's.
+    if (autoPaused) {
+      autoPaused = false;
+      notices.notify({
+        kind: 'info',
+        title: 'Carrera en pausa',
+        body: 'Se pausó al salir del juego',
+      });
+    }
+  };
+  document.addEventListener('visibilitychange', onVisibility);
+
   // ---- Render loop (requestAnimationFrame, only reads state) ----
 
   function render(now: number): void {
+    // Spec 026: a swapped-away screen stops painting for good.
+    if (!root.isConnected) return;
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     if (
@@ -1217,6 +1296,14 @@ export function createRaceScreen(
   pauseBtn.addEventListener('click', () => {
     if (lights.active) return; // nothing to pause before lights out
     state.isPaused = !state.isPaused;
+    // Spec 026: the wake lock lives only while the race runs, and a
+    // manual resume also closes the auto-pause explanation.
+    if (state.isPaused) {
+      releaseWakeLock();
+    } else {
+      autoPaused = false;
+      void acquireWakeLock();
+    }
     updateControls();
   });
 
