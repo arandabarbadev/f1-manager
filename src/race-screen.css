@@ -452,6 +452,45 @@
   text-align: right;
 }
 
+/* Spec 023: fastest lap — the holder's code is underlined with the
+   team accent in the tower, and the time rides above the tower. */
+.fastest-lap {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-bg-border);
+  border-radius: var(--radius-data);
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 8px;
+  margin: 0 0 6px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fastest-lap.hidden {
+  display: none;
+}
+
+.standing-row.vl .code {
+  color: var(--accent-text);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* Fastest lap in the final results panel. */
+.results-fl {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-text);
+  margin: 0 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.results-fl.hidden {
+  display: none;
+}
+
 .gap {
   color: var(--dim);
   text-align: right;

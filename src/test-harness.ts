@@ -1,5 +1,5 @@
-import { Driver, RaceState } from './types';
-import { resetPitCommands, simulationTick } from './simulation';
+import { Driver, RaceCarState, RaceState } from './types';
+import { isRaceFinished, queuePitCommand, resetPitCommands, simulationTick } from './simulation';
 import { buildTestRaceState } from './test-grid';
 import {
   ALL_TRACKS,
@@ -451,6 +451,104 @@ function formatSelfCheck(lines: string[]): void {
   );
 }
 
+// Acceptance check 10 (spec 023): fastest lap. With the randomness
+// pinned (no incidents, no weather, fixed compounds) a 2-car/3-lap
+// micro-race proves: millisecond precision independent of the speed
+// multiplier, and in-laps (the lap that ends in the pits) never being
+// the record — even when they are the fastest time on track.
+function fastestLapSelfCheck(lines: string[]): void {
+  let failures = 0;
+  const expect = (ok: boolean, what: string): void => {
+    if (!ok) {
+      failures++;
+      lines.push('FAIL vuelta rapida: ' + what);
+    }
+  };
+
+  const origRandom = Math.random;
+  try {
+    Math.random = () => 0.999; // no incidents, no weather, 'hard' start
+    const mkDriver = (id: string, pace: number): Driver => ({
+      id,
+      name: 'Test ' + id,
+      number: 1,
+      pace,
+      consistency: 100, // zero lap-noise: fully deterministic pace
+      aggression: 0,
+      wetSkill: 50,
+      riskTolerance: 0,
+      experience: 50,
+    });
+    const mkCar = (driverId: string, position: number): RaceCarState => ({
+      driverId,
+      carId: 'c-' + driverId,
+      teamId: 't',
+      lapProgress: 0,
+      currentLap: 0,
+      tyre: { compound: 'soft', wear: 0, lapsOnTyre: 0 },
+      fuel: 50,
+      gapToLeaderSec: 0,
+      position,
+      pitStopsCompleted: 0,
+      status: 'racing',
+      isPlayerControlled: false,
+      pitTimerSec: 0,
+      lapTimeAccumSec: 0,
+      lapInvalid: false,
+    });
+    const spec = {
+      id: 'spec',
+      teamId: 't',
+      aero: 80,
+      engine: 80,
+      chassis: 80,
+      reliability: 95,
+    };
+    const state: RaceState = {
+      track: { ...ALL_TRACKS[0], totalLaps: 3 },
+      weather: 'dry',
+      weatherCanChange: false,
+      flag: 'green',
+      flagTimerSec: 0,
+      cars: [mkCar('fast', 1), mkCar('slow', 2)],
+      teams: [{ id: 't', name: 'T', budget: 0, color: '#e10600' }],
+      drivers: [mkDriver('fast', 95), mkDriver('slow', 60)],
+      carSpecs: [spec, spec],
+      currentTick: 0,
+      simTimeMultiplier: 20,
+      isPaused: false,
+      raceEvents: [],
+      fastestLap: null,
+    };
+    // The fast car boxes at the end of its FIRST lap — its quickest
+    // lap on fresh tyres, but an in-lap can never be the record.
+    queuePitCommand({ carDriverId: 'fast', newCompound: 'medium', requestedAtTick: 0 });
+    for (let i = 0; i < 400 && !isRaceFinished(state); i++) simulationTick(state);
+    resetPitCommands();
+
+    const fl = state.fastestLap;
+    expect(!!fl, 'hay vuelta rápida al terminar');
+    if (fl) {
+      expect(fl.driverId === 'fast', 'la tiene el rápido (' + fl.driverId + ')');
+      expect(fl.lapNumber >= 2, 'la in-lap queda excluida (vuelta ' + fl.lapNumber + ')');
+      expect(
+        (fl.lapTimeSec * 1000) % (state.simTimeMultiplier * 1000) !== 0,
+        'tiempo con milésimas, no múltiplo de x' + state.simTimeMultiplier +
+          ' (' + fl.lapTimeSec.toFixed(3) + ' s)'
+      );
+      expect(fl.lapTimeSec > 40 && fl.lapTimeSec < 240, 'tiempo plausible (' + fl.lapTimeSec.toFixed(3) + ' s)');
+    }
+  } finally {
+    Math.random = origRandom;
+  }
+
+  lines.push(
+    failures === 0
+      ? 'VL check: milésimas a cualquier velocidad OK | in-lap excluida OK | regla estricta OK'
+      : 'VL check: ' + failures + ' FALLOS'
+  );
+}
+
 export function runTestHarness(): string {
   const state: RaceState = buildTestRaceState();
 
@@ -569,6 +667,9 @@ export function runTestHarness(): string {
 
   // Acceptance check 9 (spec 021): weekend format and upgrade prices.
   formatSelfCheck(lines);
+
+  // Acceptance check 10 (spec 023): fastest lap.
+  fastestLapSelfCheck(lines);
 
   return lines.join('\n');
 }

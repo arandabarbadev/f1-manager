@@ -106,6 +106,9 @@ export function buildRaceStateFromRoster(
       status: 'racing',
       isPlayerControlled: playerCar,
       pitTimerSec: 0,
+      // Spec 023: lap-time accounting starts clean.
+      lapTimeAccumSec: 0,
+      lapInvalid: false,
       // Mechanics staff: -1.5s in the pits per level above 1.
       ...(playerCar
         ? {
@@ -133,5 +136,7 @@ export function buildRaceStateFromRoster(
     raceEvents: [],
     // Spec 011: short events carry less rain risk (40% of the race's).
     weatherCanChange: Math.random() < eventRainChance(event, RAIN_RACE_CHANCE),
+    // Spec 023: no fastest lap until a valid one is completed.
+    fastestLap: null,
   };
 }

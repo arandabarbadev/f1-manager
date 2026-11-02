@@ -141,6 +141,7 @@ export function createRaceScreen(
             <h2 class="results-title">Carrera terminada</h2>
             <div class="podium"></div>
             <div class="my-results"></div>
+            <div class="results-fl hidden"></div>
             <div class="results-list"></div>
             <div class="finance-list"></div>
             <div class="results-total"></div>
@@ -155,6 +156,7 @@ export function createRaceScreen(
       <aside class="hud">
         <div class="pit-panel"></div>
         <h2 class="hud-title">Clasificación</h2>
+        <div class="fastest-lap hidden"></div>
         <ol class="standings"></ol>
         <h2 class="hud-title">Dirección de carrera</h2>
         <ul class="feed-list"></ul>
@@ -193,6 +195,8 @@ export function createRaceScreen(
   const introMapEl = introEl.querySelector<HTMLCanvasElement>('.gp-intro-map')!;
   const podiumEl = root.querySelector<HTMLElement>('.podium')!;
   const myResultsEl = root.querySelector<HTMLElement>('.my-results')!;
+  const resultsFlEl = root.querySelector<HTMLElement>('.results-fl')!;
+  const fastestLapEl = root.querySelector<HTMLElement>('.fastest-lap')!;
   introEl.addEventListener('click', endIntro);
   const feedListEl = root.querySelector<HTMLUListElement>('.feed-list')!;
   const exitBtn = root.querySelector<HTMLButtonElement>('.exit-btn')!;
@@ -333,6 +337,22 @@ export function createRaceScreen(
           floatingTexts.push({ text: '¡A boxes!', driverId: ev.carDriverId, bornAt: now });
         }
         addFeed(`${driverById(ev.carDriverId).name} entra a boxes`, 'pit');
+      } else if (ev.type === 'fastestLap') {
+        // Spec 023: a new fastest lap announces itself, like the
+        // weather does — code + time, broadcast style.
+        const fl = state.fastestLap;
+        if (fl) {
+          const name = driverById(ev.carDriverId).name;
+          notices.notify({
+            kind: 'info',
+            title: 'Vuelta rápida',
+            body: `${name} · ${formatLapTime(fl.lapTimeSec)}`,
+          });
+          addFeed(
+            `Vuelta rápida: ${towerCodes.get(ev.carDriverId) ?? name} ${formatLapTime(fl.lapTimeSec)}`,
+            'overtake'
+          );
+        }
       } else if (ev.type === 'incident' && ev.incidentKind) {
         // Spec 012: visible for EVERY car, not just the player's.
         const car = state.cars.find((c) => c.driverId === ev.carDriverId);
@@ -367,6 +387,9 @@ export function createRaceScreen(
   // Spec 022: where each driver STARTED — the live tower's gained/lost
   // places are measured against this grid order.
   const gridStartPos = new Map<string, number>();
+  // Spec 020/023: the grid's broadcast codes, shared by the tower, the
+  // podium and the fastest-lap line (recomputed per race).
+  let towerCodes = new Map<string, string>();
 
   const teamById = (id: string) => state.teams.find((t) => t.id === id)!;
   const driverById = (id: string) => state.drivers.find((d) => d.id === id)!;
@@ -850,8 +873,10 @@ export function createRaceScreen(
   function buildStandings(): void {
     standingsEl.innerHTML = '';
     rows.clear();
-    // Spec 020: broadcast codes for the tower, unique per grid.
+    // Spec 020/023: broadcast codes for the tower (and everything that
+    // reads like broadcast: podium, fastest lap), unique per grid.
     const codes = assignDriverCodes(state.drivers);
+    towerCodes = codes;
     for (const car of state.cars) {
       const li = document.createElement('li');
       // Spec 015: tyre compound + wear are the player's own strategy
@@ -922,8 +947,18 @@ export function createRaceScreen(
       }
       row.root.classList.toggle('pitting', car.status === 'inPit');
       row.root.classList.toggle('dnf', car.status === 'dnf');
+      // Spec 023: the fastest-lap holder is marked in the tower.
+      row.root.classList.toggle('vl', state.fastestLap?.driverId === car.driverId);
       row.pitflag.textContent =
         car.status === 'inPit' ? `BOX ${Math.ceil(car.pitTimerSec)}s` : 'BOX';
+    }
+    // Spec 023: the live fastest lap rides right above the tower.
+    if (state.fastestLap) {
+      fastestLapEl.classList.remove('hidden');
+      const code = towerCodes.get(state.fastestLap.driverId) ?? '';
+      fastestLapEl.textContent = `VL ${code} · ${formatLapTime(state.fastestLap.lapTimeSec)}`;
+    } else {
+      fastestLapEl.classList.add('hidden');
     }
     for (const box of pitBoxes) {
       const car = state.cars.find((c) => c.driverId === box.carDriverId)!;
@@ -950,6 +985,13 @@ export function createRaceScreen(
         btn.disabled = finished || car.status !== 'racing';
       }
     }
+  }
+
+  // m:ss.mmm — broadcast lap-time format (spec 023).
+  function formatLapTime(sec: number): string {
+    const m = Math.floor(sec / 60);
+    const s = sec - m * 60;
+    return `${m}:${s.toFixed(3).padStart(6, '0')}`;
   }
 
   function formatGap(car: RaceCarState, leaderLap: number): string {
@@ -1237,6 +1279,15 @@ export function createRaceScreen(
       mine.querySelector<HTMLElement>('.my-name')!.textContent =
         driverById(car.driverId).name;
       myResultsEl.appendChild(mine);
+    }
+    // Spec 023: the fastest lap closes the story in the final panel.
+    if (state.fastestLap) {
+      resultsFlEl.textContent =
+        `Vuelta rápida: ${towerCodes.get(state.fastestLap.driverId) ?? ''} · ` +
+        `${formatLapTime(state.fastestLap.lapTimeSec)}`;
+      resultsFlEl.classList.remove('hidden');
+    } else {
+      resultsFlEl.classList.add('hidden');
     }
     resultsListEl.innerHTML = '';
     for (const r of playerResults) {

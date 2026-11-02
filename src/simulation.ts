@@ -258,16 +258,32 @@ export function simulationTick(state: RaceState): void {
     if (state.flag === 'yellow') pace *= YELLOW_PACE_FACTOR;
 
     for (let s = 0; s < seconds; s++) {
-      car.lapProgress += pace / REFERENCE_LAP_SEC;
-      if (car.lapProgress >= 1) {
-        car.lapProgress -= 1;
+      const step = pace / REFERENCE_LAP_SEC;
+      // Spec 023: laps run behind a yellow/red flag never count for
+      // the fastest-lap record (the pace itself is unchanged).
+      if (state.flag !== 'green') car.lapInvalid = true;
+      if (car.lapProgress + step >= 1) {
+        // Spec 023: interpolate the line crossing INSIDE this second —
+        // the lap time carries milliseconds at any speed multiplier,
+        // never a multiple of it. The progression itself (progress,
+        // laps, wear) is bit-for-bit the same arithmetic as before.
+        const needed = (1 - car.lapProgress) / step;
+        car.lapTimeAccumSec += needed;
+        recordLapTime(state, car, events);
+        // Advance across the line: same arithmetic as the classic
+        // += step / -= 1, in one expression.
+        car.lapProgress += step - 1;
         car.currentLap++;
+        car.lapTimeAccumSec = 1 - needed; // the remainder starts the next lap
         // Pit entry happens exactly at the start/finish line; the car
         // stops moving for the rest of this tick.
         if (startPitStop(state, car, events)) break;
+      } else {
+        car.lapTimeAccumSec += 1;
+        car.lapProgress += step;
       }
       car.tyre.wear = Math.min(100, car.tyre.wear + computeWearRate(car, state.track, state.weather));
-      car.tyre.lapsOnTyre += pace / REFERENCE_LAP_SEC;
+      car.tyre.lapsOnTyre += step;
     }
   }
 
@@ -424,6 +440,27 @@ function runPitStopAI(state: RaceState): void {
 
 function totalProgress(car: RaceCarState): number {
   return car.currentLap + car.lapProgress;
+}
+
+// Spec 023: a lap was just completed — record its time and update the
+// fastest lap. Valid laps only: full green-flag running and no pit
+// stop at the line (the in-lap ends in the garage). Ties keep the
+// earlier holder (strictly-less replacement).
+function recordLapTime(
+  state: RaceState,
+  car: RaceCarState,
+  events: RaceEvent[]
+): void {
+  const lapNumber = car.currentLap + 1; // the lap being closed
+  const lapTimeSec = car.lapTimeAccumSec;
+  const valid = !car.lapInvalid && state.flag === 'green' && !pendingPits.has(car.driverId);
+  car.lapInvalid = false; // fresh lap starts clean
+  if (!valid) return;
+  const current = state.fastestLap;
+  if (!current || lapTimeSec < current.lapTimeSec) {
+    state.fastestLap = { driverId: car.driverId, lapTimeSec, lapNumber };
+    events.push({ type: 'fastestLap', carDriverId: car.driverId });
+  }
 }
 
 function recalculatePositionsAndGaps(state: RaceState, events: RaceEvent[]): void {

@@ -93,6 +93,19 @@ export interface RaceCarState {
   // the player's cars when the mechanics staff level reduces the
   // stop time). Falls back to track.pitLaneTimeLoss.
   pitLaneTimeOverrideSec?: number;
+  // Spec 023: lap-time accounting. Simulated seconds accumulated in
+  // the CURRENT lap (interpolated at the line), and whether the lap
+  // is already invalid for the fastest-lap record (yellow/red flag).
+  lapTimeAccumSec: number;
+  lapInvalid: boolean;
+}
+
+// Spec 023: the race's current fastest lap (strictly-less replays
+// only — ties keep the earlier one).
+export interface FastestLap {
+  driverId: string;
+  lapTimeSec: number;
+  lapNumber: number;
 }
 
 export interface RaceState {
@@ -118,6 +131,8 @@ export interface RaceState {
   // Engine extension: false = this race stays dry from start to finish
   // (rain is a per-race lottery, not every race).
   weatherCanChange: boolean;
+  // Spec 023: current fastest lap (null until a valid lap is set).
+  fastestLap: FastestLap | null;
 }
 
 export interface PitCommand {
@@ -130,7 +145,7 @@ export interface PitCommand {
 // render layer reads them for visual feedback and they are
 // replaced on the next tick.
 export interface RaceEvent {
-  type: 'overtake' | 'pitEntry' | 'incident';
+  type: 'overtake' | 'pitEntry' | 'incident' | 'fastestLap';
   carDriverId: string;
   previousPosition?: number;
   newPosition?: number;
