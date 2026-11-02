@@ -21,6 +21,7 @@ import { buildTrackSampler, Point, TrackSampler } from './track-path';
 import { lateralTarget, stepLateral } from './racing-line';
 import { createNoticeHub } from './notices';
 import { assignDriverCodes } from './driver-codes';
+import { setStartCompound } from './race-builder';
 
 // ============================================================
 // RACE SCREEN (Phase 2)
@@ -150,6 +151,16 @@ export function createRaceScreen(
         <div class="gp-intro-hint">Toca para empezar</div>
       </div>
     </div>
+    <!-- Spec 025: the start-tyre choice sits between the GP
+         presentation and the lights (race/sprint only) — one row per
+         player car, S/M/H rings, preselected by the builder's draw. -->
+    <div class="tyre-pick hidden">
+      <div class="tyre-pick-card cut">
+        <h3 class="tp-title">Goma de salida</h3>
+        <div class="tp-rows"></div>
+        <button type="button" class="btn primary tp-go">Salida</button>
+      </div>
+    </div>
     <div class="results-overlay hidden">
       <div class="results-panel cut">
         <h2 class="results-title">Carrera terminada</h2>
@@ -197,11 +208,16 @@ export function createRaceScreen(
   const introNameEl = introEl.querySelector<HTMLElement>('.gp-intro-name')!;
   const introLapsEl = introEl.querySelector<HTMLElement>('.gp-intro-laps')!;
   const introMapEl = introEl.querySelector<HTMLCanvasElement>('.gp-intro-map')!;
+  // Spec 025: start-tyre choice card (one row per player car).
+  const pickEl = root.querySelector<HTMLElement>('.tyre-pick')!;
+  const pickRowsEl = pickEl.querySelector<HTMLElement>('.tp-rows')!;
+  const pickGoBtn = pickEl.querySelector<HTMLButtonElement>('.tp-go')!;
   const podiumEl = root.querySelector<HTMLElement>('.podium')!;
   const myResultsEl = root.querySelector<HTMLElement>('.my-results')!;
   const resultsFlEl = root.querySelector<HTMLElement>('.results-fl')!;
   const fastestLapEl = root.querySelector<HTMLElement>('.fastest-lap')!;
   introEl.addEventListener('click', endIntro);
+  pickGoBtn.addEventListener('click', endPick);
   const feedListEl = root.querySelector<HTMLUListElement>('.feed-list')!;
   const exitBtn = root.querySelector<HTMLButtonElement>('.exit-btn')!;
   if (onExit) exitBtn.addEventListener('click', onExit);
@@ -290,6 +306,10 @@ export function createRaceScreen(
     guided: boolean;
   }
   let intro: IntroPhase = { active: false, until: 0, guided: false };
+
+  // Spec 025: while the start-tyre card is open the race has not
+  // started either — same freeze as intro/lights (clock stays at 0).
+  let pickActive = false;
 
   // Spec 012: race-control feed — last events, newest first, capped.
   function addFeed(text: string, kind: 'incident' | 'overtake' | 'pit'): void {
@@ -421,6 +441,9 @@ export function createRaceScreen(
     overlaySeasonBtn.classList.add('hidden');
     overlayContinueBtn.classList.add('hidden');
     prizeAwarded = false;
+    // Spec 025: the tyre card starts closed on every (re)build.
+    pickActive = false;
+    pickEl.classList.add('hidden');
     // Spec 012: fresh lateral state and grid sides for this race.
     lateralByCar.clear();
     gridByCar.clear();
@@ -554,9 +577,19 @@ export function createRaceScreen(
     if (!intro.active) return;
     intro.active = false;
     introEl.classList.add('hidden');
+    // Spec 025: race and sprint stop at the start-tyre card; quali
+    // goes straight to the formation lights.
+    if (event !== 'quali') {
+      showPick();
+      return;
+    }
+    startRacePhases();
+  }
+
+  // Lights + the first-time guide, always AFTER any overlay of the
+  // opening sequence (presentation, tyre card) is closed.
+  function startRacePhases(): void {
     startLights();
-    // The first-time guide waits for the presentation: never two
-    // overlays fighting for the same screen.
     if (!intro.guided) {
       intro.guided = true;
       showGuideOnce(
@@ -571,6 +604,58 @@ export function createRaceScreen(
         ]
       );
     }
+  }
+
+  // ---- Spec 025: start-tyre choice (race/sprint) ----
+
+  function showPick(): void {
+    pickActive = true;
+    const codes = assignDriverCodes(state.drivers);
+    pickRowsEl.innerHTML = '';
+    for (const car of state.cars.filter((c) => c.isPlayerControlled)) {
+      const driver = state.drivers.find((d) => d.id === car.driverId);
+      if (!driver) continue;
+      const row = document.createElement('div');
+      row.className = 'tp-row';
+      row.dataset.driverId = car.driverId;
+      row.innerHTML = `
+        <span class="tp-pos"></span>
+        <span class="tp-driver"><strong></strong><em></em></span>
+        <div class="tp-group"></div>`;
+      row.querySelector<HTMLElement>('.tp-pos')!.textContent = `P${car.position}`;
+      row.querySelector<HTMLElement>('.tp-driver strong')!.textContent =
+        codes.get(driver.id) ?? '';
+      row.querySelector<HTMLElement>('.tp-driver em')!.textContent = driver.name;
+      const group = row.querySelector<HTMLElement>('.tp-group')!;
+      for (const compound of ['soft', 'medium', 'hard'] as TyreCompound[]) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        // The builder's draw arrives preselected: untouched = one step.
+        btn.className = 'tp-btn' + (car.tyre.compound === compound ? ' active' : '');
+        btn.dataset.compound = compound;
+        btn.innerHTML = `<span class="tyre-ico ${compound}">${COMPOUND_LABEL[compound]}</span>`;
+        btn.addEventListener('click', () => {
+          group.querySelectorAll('.tp-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+        group.appendChild(btn);
+      }
+      pickRowsEl.appendChild(row);
+    }
+    pickEl.classList.remove('hidden');
+  }
+
+  function endPick(): void {
+    if (!pickActive) return;
+    pickActive = false;
+    pickEl.classList.add('hidden');
+    // The marked ring is the tyre that car starts on (fresh rubber).
+    for (const btn of pickRowsEl.querySelectorAll<HTMLButtonElement>('.tp-btn.active')) {
+      const row = btn.closest<HTMLElement>('.tp-row')!;
+      setStartCompound(state, row.dataset.driverId!, btn.dataset.compound as TyreCompound);
+    }
+    updateHud(); // the tower shows the chosen tyres from second one
+    startRacePhases();
   }
 
   function advanceLights(now: number): void {
@@ -690,6 +775,12 @@ export function createRaceScreen(
     // (auto-end after the timeout; a tap ends it too).
     if (intro.active) {
       if (performance.now() >= intro.until) endIntro();
+      snapshotShadow();
+      lastTickAt = performance.now();
+      return;
+    }
+    // Spec 025: the start-tyre choice also freezes the race.
+    if (pickActive) {
       snapshotShadow();
       lastTickAt = performance.now();
       return;

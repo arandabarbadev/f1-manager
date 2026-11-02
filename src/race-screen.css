@@ -671,6 +671,113 @@
   font-size: 11px;
 }
 
+/* Spec 025: start-tyre choice — race/sprint only, between the GP
+   presentation (z-35) and the race itself. One row per player car:
+   [grid P#][code+name][S/M/H rings], one wide "Salida" button. */
+.tyre-pick {
+  position: absolute;
+  inset: 0;
+  z-index: 38;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  padding: 16px;
+}
+
+.tyre-pick.hidden {
+  display: none;
+}
+
+.tyre-pick-card {
+  background: var(--panel);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-data);
+  width: min(92vw, 380px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+  padding: 18px 20px;
+}
+
+.tp-title {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.tp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.tp-pos {
+  font-family: var(--font-display); /* broadcast numerals (podium/tower) */
+  font-size: 20px;
+  min-width: 2em;
+  flex: none;
+}
+
+.tp-driver {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.tp-driver strong {
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+
+.tp-driver em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tp-group {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+
+.tp-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-touch);
+  border: 1px solid var(--border-2);
+  background: var(--btn-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.tp-btn .tyre-ico {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+}
+
+.tp-btn.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--panel));
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.tp-go {
+  width: 100%;
+  margin-top: 14px;
+  min-height: 44px;
+}
+
 /* Race control feed (spec 012): last events under the standings */
 .feed-list {
   list-style: none;

@@ -41,6 +41,19 @@ function developmentBonuses(roster: Roster): {
 // (quali 3 laps, sprints 1/4) and lowers the rain risk; `grid`
 // (fastest-first driver ids) chains the order from the previous
 // act's classification — without it the grid is expected pace.
+// Spec 025: the player's start-tyre choice (race/sprint only, applied
+// between the GP presentation and the lights). Only the chosen car
+// changes — the rivals keep the builder's random draw untouched.
+export function setStartCompound(
+  state: RaceState,
+  driverId: string,
+  compound: TyreCompound
+): void {
+  const car = state.cars.find((c) => c.driverId === driverId);
+  if (!car) return;
+  car.tyre = { compound, wear: 0, lapsOnTyre: 0 };
+}
+
 export function buildRaceStateFromRoster(
   roster: Roster,
   track: Track,

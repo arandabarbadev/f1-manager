@@ -1,4 +1,4 @@
-import { Driver, RaceCarState, RaceState } from './types';
+import { Driver, RaceCarState, RaceState, TyreCompound } from './types';
 import { isRaceFinished, queuePitCommand, resetPitCommands, simulationTick } from './simulation';
 import { buildTestRaceState } from './test-grid';
 import {
@@ -21,6 +21,7 @@ import {
 } from './roster';
 import { assignDriverCodes, driverCodeBase } from './driver-codes';
 import { createDefaultCareer } from './career';
+import { setStartCompound } from './race-builder';
 import { eventOrderFor, hasSprint, pendingEvent } from './weekend';
 import {
   DIFFICULTY_ORDER,
@@ -549,6 +550,66 @@ function fastestLapSelfCheck(lines: string[]): void {
   );
 }
 
+// Acceptance check 11 (spec 025): the start-tyre choice touches ONLY
+// the chosen player car and hands it fresh rubber; everyone else keeps
+// the builder's draw (the rivals' lottery stays untouched).
+function tyrePickSelfCheck(lines: string[]): void {
+  let failures = 0;
+  const expect = (ok: boolean, what: string): void => {
+    if (!ok) {
+      failures++;
+      lines.push('FAIL goma: ' + what);
+    }
+  };
+
+  const mkCar = (id: string, player: boolean, compound: TyreCompound): RaceCarState => ({
+    driverId: id,
+    carId: id + '-car',
+    teamId: 't',
+    lapProgress: 0,
+    currentLap: 2,
+    // Half-worn rubber: the choice must reset it to a fresh tyre.
+    tyre: { compound, wear: 0.55, lapsOnTyre: 2 },
+    fuel: 50,
+    gapToLeaderSec: 0,
+    position: 1,
+    pitStopsCompleted: 0,
+    status: 'racing',
+    isPlayerControlled: player,
+    pitTimerSec: 0,
+    lapTimeAccumSec: 0,
+    lapInvalid: false,
+  });
+  const state = {
+    cars: [mkCar('mio-a', true, 'medium'), mkCar('rival', false, 'hard'), mkCar('mio-b', true, 'soft')],
+  } as unknown as RaceState;
+
+  setStartCompound(state, 'mio-a', 'soft');
+  const chosen = state.cars[0];
+  expect(
+    chosen.tyre.compound === 'soft' && chosen.tyre.wear === 0 && chosen.tyre.lapsOnTyre === 0,
+    'la goma elegida se aplica nueva (desgaste 0, 0 vueltas)'
+  );
+  expect(
+    state.cars[1].tyre.compound === 'hard' && Math.abs(state.cars[1].tyre.wear - 0.55) < 1e-9,
+    'el rival conserva su sorteo'
+  );
+  expect(
+    state.cars[2].tyre.compound === 'soft' && Math.abs(state.cars[2].tyre.wear - 0.55) < 1e-9,
+    'el otro coche mío no cambia si no lo toco'
+  );
+  setStartCompound(state, 'desconocido', 'soft');
+  expect(state.cars.length === 3, 'driverId desconocido: sin error');
+  setStartCompound(state, 'mio-b', 'medium');
+  expect(state.cars[2].tyre.compound === 'medium', 'el segundo coche también se puede cambiar');
+
+  lines.push(
+    failures === 0
+      ? 'Goma check: solo el coche elegido OK | goma nueva OK | rivales intactos OK'
+      : 'Goma check: ' + failures + ' FALLOS'
+  );
+}
+
 export function runTestHarness(): string {
   const state: RaceState = buildTestRaceState();
 
@@ -670,6 +731,9 @@ export function runTestHarness(): string {
 
   // Acceptance check 10 (spec 023): fastest lap.
   fastestLapSelfCheck(lines);
+
+  // Acceptance check 11 (spec 025): start-tyre choice.
+  tyrePickSelfCheck(lines);
 
   return lines.join('\n');
 }
