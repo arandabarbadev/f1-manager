@@ -41,6 +41,15 @@ const TICK_MS = 200;
 // The canvas redraws every frame; the DOM HUD refreshes at this rate.
 const HUD_INTERVAL_MS = 200;
 
+// Spec 027: the system's reduced-motion preference, read live (never
+// cached at load) so changing it mid-game is honored. Only decorative
+// movement is affected — the race itself is game content.
+const reducedMotionQuery: MediaQueryList | null =
+  typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)')
+    : null;
+const reducedMotion = (): boolean => reducedMotionQuery?.matches ?? false;
+
 const COMPOUND_LABEL: Record<TyreCompound, string> = {
   soft: 'S',
   medium: 'M',
@@ -490,7 +499,11 @@ export function createRaceScreen(
     lastLateralStepAt = 0;
     // Spec 022: the GP presentation opens the show; the lights (and
     // the race behind them) start when it ends.
-    startIntro();
+    // Spec 027: with reduced motion the timed card is skipped —
+    // straight to the tyre card (or the lights in quali); the GP name
+    // and lap count still live in the header.
+    if (reducedMotion()) afterIntro();
+    else startIntro();
     buildStandings();
     buildPitPanel();
     updateControls();
@@ -613,8 +626,13 @@ export function createRaceScreen(
     if (!intro.active) return;
     intro.active = false;
     introEl.classList.add('hidden');
-    // Spec 025: race and sprint stop at the start-tyre card; quali
-    // goes straight to the formation lights.
+    afterIntro();
+  }
+
+  // Spec 025: race and sprint stop at the start-tyre card; quali goes
+  // straight to the formation lights. Spec 027: also the entry point
+  // when the GP presentation is skipped (reduced motion).
+  function afterIntro(): void {
     if (event !== 'quali') {
       showPick();
       return;
@@ -941,6 +959,9 @@ export function createRaceScreen(
 
   // Event feedback layer: highlight rings + rising floating texts.
   function drawEffects(now: number, alpha: number): void {
+    // Spec 027: rings, incident flashes and floating texts are
+    // decorative movement — off with reduced motion.
+    if (reducedMotion()) return;
     const r = carRadius();
     for (const car of state.cars) {
       const until = highlightUntil.get(car.driverId) ?? 0;

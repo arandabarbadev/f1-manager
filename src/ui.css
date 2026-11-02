@@ -389,3 +389,25 @@ body {
     transform: translateY(-6px);
   }
 }
+
+/* Spec 027: reduced motion — decorative movement off. Kept LAST in the
+   file so it wins the cascade over the rules above (same specificity).
+   Screens swap instantly and notices appear in place (same ttl, same
+   info); the race itself (cars, clock, start lights) is game content
+   and keeps moving. */
+@media (prefers-reduced-motion: reduce) {
+  .screen-leave,
+  .screen-enter {
+    animation: none;
+  }
+
+  .notice {
+    animation: none;
+  }
+
+  .notice.leaving {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+}
