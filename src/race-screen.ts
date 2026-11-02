@@ -127,31 +127,7 @@ export function createRaceScreen(
           </div>
           <div class="lights-label">Formación</div>
         </div>
-        <div class="gp-intro hidden">
-          <div class="gp-intro-card cut">
-            <h3 class="gp-intro-name"></h3>
-            <div class="gp-intro-laps"></div>
-            <canvas class="gp-intro-map" width="240" height="150"></canvas>
-            <div class="gp-intro-hint">Toca para empezar</div>
-          </div>
-        </div>
         <div class="flag-indicator hidden"></div>
-        <div class="results-overlay hidden">
-          <div class="results-panel cut">
-            <h2 class="results-title">Carrera terminada</h2>
-            <div class="podium"></div>
-            <div class="my-results"></div>
-            <div class="results-fl hidden"></div>
-            <div class="results-list"></div>
-            <div class="finance-list"></div>
-            <div class="results-total"></div>
-            <div class="results-actions">
-              <button type="button" class="btn primary overlay-continue-btn hidden">Continuar</button>
-              <button type="button" class="btn primary overlay-season-btn hidden">Ver resumen de temporada</button>
-              <button type="button" class="btn overlay-exit-btn">Mi Equipo</button>
-            </div>
-          </div>
-        </div>
       </div>
       <aside class="hud">
         <div class="pit-panel"></div>
@@ -161,6 +137,34 @@ export function createRaceScreen(
         <h2 class="hud-title">Dirección de carrera</h2>
         <ul class="feed-list"></ul>
       </aside>
+    </div>
+    <!-- Spec 024: the overlays hang from the screen root, NOT from
+         .track-wrap (38vh tall on phones) — the results panel must
+         cover and center on the WHOLE screen so its actions stay
+         tappable in portrait. -->
+    <div class="gp-intro hidden">
+      <div class="gp-intro-card cut">
+        <h3 class="gp-intro-name"></h3>
+        <div class="gp-intro-laps"></div>
+        <canvas class="gp-intro-map" width="240" height="150"></canvas>
+        <div class="gp-intro-hint">Toca para empezar</div>
+      </div>
+    </div>
+    <div class="results-overlay hidden">
+      <div class="results-panel cut">
+        <h2 class="results-title">Carrera terminada</h2>
+        <div class="podium"></div>
+        <div class="my-results"></div>
+        <div class="results-fl hidden"></div>
+        <div class="results-list"></div>
+        <div class="finance-list"></div>
+        <div class="results-total"></div>
+        <div class="results-actions">
+          <button type="button" class="btn primary overlay-continue-btn hidden">Continuar</button>
+          <button type="button" class="btn primary overlay-season-btn hidden">Ver resumen de temporada</button>
+          <button type="button" class="btn overlay-exit-btn">Mi Equipo</button>
+        </div>
+      </div>
     </div>
   `;
   container.appendChild(root);
@@ -1301,6 +1305,11 @@ export function createRaceScreen(
       resultsListEl.appendChild(row);
     }
     resultsTotalEl.textContent = `Premio: +${totalPrize} M€ · Presupuesto: ${career.budget} M€ · ${nextLabel}`;
+    // Spec 024: the finish is the moment that matters — first-time
+    // guides (fixed, z-60, on document.body) must never cover it.
+    // showGuideOnce already marked them as seen, so removing the card
+    // does not bring it back later.
+    document.querySelectorAll('.guide-card').forEach((g) => g.remove());
     overlayEl.classList.remove('hidden');
   }
 

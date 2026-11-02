@@ -9,6 +9,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  position: relative; /* spec 024: anchors the full-screen overlays */
   color: var(--text);
   font-family: var(--font-ui); /* spec 019 */
   background: var(--bg);
@@ -119,9 +120,13 @@
 }
 
 /* Post-race results overlay */
+/* Spec 024: the overlay hangs from the screen root (z above the HUD)
+   and covers the WHOLE screen — inside .track-wrap (38vh on phones)
+   the panel spilled under the HUD and its buttons were untappable. */
 .results-overlay {
   position: absolute;
   inset: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -137,14 +142,18 @@
   background: var(--panel);
   border: 1px solid var(--border-2);
   border-radius: var(--radius-data);
-  padding: 18px 20px;
   width: min(92vw, 380px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   /* Spec 022: podium + list can outgrow a phone screen; the actions
      stay reachable with the thumb at the end of the scroll. */
   max-height: min(92vh, 660px);
+  /* Spec 024: svh keeps the buttons clear of the browser's URL bar;
+     vh above is the fallback for older engines. */
+  max-height: min(92svh, 660px);
   overflow-y: auto;
   box-sizing: border-box;
+  /* bottom padding lives on the sticky actions row (spec 024) */
+  padding: 18px 20px 0;
 }
 
 /* Spec 022: broadcast podium (P2 — P1 — P3, winner tallest) + the
@@ -280,14 +289,23 @@
   color: var(--accent-text);
 }
 
+/* Spec 024: pinned at the end of the scrolling panel — the actions
+   stay on screen however tall the content (or the system font) is. */
 .results-actions {
+  position: sticky;
+  bottom: 0;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  margin: 14px -20px 0;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  background: var(--panel);
+  border-top: 1px solid var(--border);
 }
 
 .results-actions .btn {
   flex: 1;
+  min-height: 44px;
 }
 
 .hud {
