@@ -108,6 +108,17 @@ export interface FastestLap {
   lapNumber: number;
 }
 
+// Spec 028: one completed lap of a PLAYER car, for the post-race pace
+// chart. Marked laps (pit in-lap, flag lap) are shown but never drive
+// the chart's scale.
+export interface PlayerLapEntry {
+  lap: number;
+  lapTimeSec: number;
+  compound: TyreCompound;
+  pitted: boolean;
+  flag: boolean;
+}
+
 export interface RaceState {
   track: Track;
   weather: Weather;
@@ -133,6 +144,9 @@ export interface RaceState {
   weatherCanChange: boolean;
   // Spec 023: current fastest lap (null until a valid lap is set).
   fastestLap: FastestLap | null;
+  // Spec 028: per-lap log of the player's cars (driverId -> laps), in
+  // memory only — never persisted with the save game.
+  playerLaps: Record<string, PlayerLapEntry[]>;
 }
 
 export interface PitCommand {

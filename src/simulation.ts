@@ -454,6 +454,21 @@ function recordLapTime(
   const lapNumber = car.currentLap + 1; // the lap being closed
   const lapTimeSec = car.lapTimeAccumSec;
   const valid = !car.lapInvalid && state.flag === 'green' && !pendingPits.has(car.driverId);
+  // Spec 028: observe every completed lap of the PLAYER's cars for the
+  // post-race pace chart — marked laps included (the chart shows the
+  // reality; only the fastest-lap record filters). Purely
+  // observational: nothing about the race changes. Read before the
+  // reset below: lapInvalid still says if the lap ran under a flag.
+  if (car.isPlayerControlled) {
+    state.playerLaps ??= {};
+    (state.playerLaps[car.driverId] ??= []).push({
+      lap: lapNumber,
+      lapTimeSec,
+      compound: car.tyre.compound,
+      pitted: pendingPits.has(car.driverId),
+      flag: car.lapInvalid,
+    });
+  }
   car.lapInvalid = false; // fresh lap starts clean
   if (!valid) return;
   const current = state.fastestLap;

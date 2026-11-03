@@ -22,6 +22,8 @@ import {
 import { assignDriverCodes, driverCodeBase } from './driver-codes';
 import { createDefaultCareer } from './career';
 import { setStartCompound } from './race-builder';
+import { buildPaceChart, chartScale } from './pace-chart';
+import type { PlayerLapEntry } from './types';
 import { eventOrderFor, hasSprint, pendingEvent } from './weekend';
 import {
   DIFFICULTY_ORDER,
@@ -520,6 +522,7 @@ function fastestLapSelfCheck(lines: string[]): void {
       isPaused: false,
       raceEvents: [],
       fastestLap: null,
+      playerLaps: {},
     };
     // The fast car boxes at the end of its FIRST lap — its quickest
     // lap on fresh tyres, but an in-lap can never be the record.
@@ -607,6 +610,136 @@ function tyrePickSelfCheck(lines: string[]): void {
     failures === 0
       ? 'Goma check: solo el coche elegido OK | goma nueva OK | rivales intactos OK'
       : 'Goma check: ' + failures + ' FALLOS'
+  );
+}
+
+// Acceptance check 12 (spec 028): the per-lap log of the player's cars
+// and the pace-chart scale. A deterministic 4-lap micro-race with BOTH
+// cars player-controlled (one pits at the end of lap 1) proves the
+// collection; synthetic entries prove the scale ignores marked laps.
+function paceChartSelfCheck(lines: string[]): void {
+  let failures = 0;
+  const expect = (ok: boolean, what: string): void => {
+    if (!ok) {
+      failures++;
+      lines.push('FAIL ritmo: ' + what);
+    }
+  };
+
+  const origRandom = Math.random;
+  try {
+    Math.random = () => 0.999; // no incidents, no weather, no flags
+    const mkDriver = (id: string, pace: number): Driver => ({
+      id,
+      name: 'Test ' + id,
+      number: 1,
+      pace,
+      consistency: 100,
+      aggression: 0,
+      wetSkill: 50,
+      riskTolerance: 0,
+      experience: 50,
+    });
+    const mkPlayerCar = (driverId: string, position: number): RaceCarState => ({
+      driverId,
+      carId: 'c-' + driverId,
+      teamId: 't',
+      lapProgress: 0,
+      currentLap: 0,
+      tyre: { compound: 'soft', wear: 0, lapsOnTyre: 0 },
+      fuel: 50,
+      gapToLeaderSec: 0,
+      position,
+      pitStopsCompleted: 0,
+      status: 'racing',
+      isPlayerControlled: true,
+      pitTimerSec: 0,
+      lapTimeAccumSec: 0,
+      lapInvalid: false,
+    });
+    const spec = {
+      id: 'spec',
+      teamId: 't',
+      aero: 80,
+      engine: 80,
+      chassis: 80,
+      reliability: 95,
+    };
+    const state: RaceState = {
+      track: { ...ALL_TRACKS[0], totalLaps: 4 },
+      weather: 'dry',
+      weatherCanChange: false,
+      flag: 'green',
+      flagTimerSec: 0,
+      cars: [mkPlayerCar('uno', 1), mkPlayerCar('dos', 2)],
+      teams: [{ id: 't', name: 'T', budget: 0, color: '#e10600' }],
+      drivers: [mkDriver('uno', 95), mkDriver('dos', 60)],
+      carSpecs: [spec, spec],
+      currentTick: 0,
+      simTimeMultiplier: 20,
+      isPaused: false,
+      raceEvents: [],
+      fastestLap: null,
+      playerLaps: {},
+    };
+    // 'uno' boxes at the end of its first lap; 'dos' runs it through.
+    queuePitCommand({ carDriverId: 'uno', newCompound: 'medium', requestedAtTick: 0 });
+    for (let i = 0; i < 600 && !isRaceFinished(state); i++) simulationTick(state);
+    resetPitCommands();
+
+    const lapsUno = state.playerLaps['uno'] ?? [];
+    const lapsDos = state.playerLaps['dos'] ?? [];
+    // The chequered flag cuts the backmarker: the leader logs all 4
+    // laps, the slower car one less (the chart line just ends there).
+    expect(
+      lapsUno.length === 4 && lapsDos.length === 3,
+      'una entrada por vuelta completada; la bandera corta al rezagado (' + lapsUno.length + '/' + lapsDos.length + ')'
+    );
+    expect(lapsUno[0]?.pitted === true, 'la in-lap de uno queda marcada como parada');
+    expect(lapsUno.slice(1).every((e) => !e.pitted), 'tras la parada nada más marcado');
+    expect(lapsDos.every((e) => !e.pitted), 'dos no paró: ninguna marca');
+    expect(lapsUno[1]?.compound === 'medium', 'tras la parada la goma es la nueva (M)');
+    expect(
+      lapsUno.every((e) => !e.flag) && lapsDos.every((e) => !e.flag),
+      'sin bandera en el stub determinista'
+    );
+    expect(
+      [...lapsUno, ...lapsDos].every((e) => e.lapTimeSec > 40 && e.lapTimeSec < 300),
+      'tiempos plausibles'
+    );
+
+    // Scale: marked laps never stretch it (synthetic, exact numbers).
+    const synthetic: PlayerLapEntry[][] = [
+      [
+        { lap: 1, lapTimeSec: 100, compound: 'soft', pitted: false, flag: false },
+        { lap: 2, lapTimeSec: 101, compound: 'soft', pitted: false, flag: false },
+      ],
+      [
+        { lap: 1, lapTimeSec: 99, compound: 'soft', pitted: false, flag: false },
+        { lap: 2, lapTimeSec: 200, compound: 'soft', pitted: true, flag: false },
+      ],
+    ];
+    const sc = chartScale(synthetic);
+    expect(sc.maxSec < 200 - 1, 'una vuelta marcada de 200 s no estira la escala (max ' + sc.maxSec.toFixed(1) + ')');
+    expect(sc.minSec < 99 && sc.maxSec > 101, 'la escala envuelve a las limpias');
+
+    // The SVG itself: two shapes for two cars, pit note, empty guard.
+    expect(buildPaceChart([]) === '', 'sin datos: sin gráfico');
+    const svg = buildPaceChart([
+      { code: 'UNO', entries: synthetic[0] },
+      { code: 'DOS', entries: synthetic[1] },
+    ]);
+    expect(svg.includes('pc-line a') && svg.includes('pc-line b'), 'dos series (continua y discontinua)');
+    expect(svg.includes('pc-dot b marked') || svg.includes('pc-dot a marked'), 'la vuelta marcada queda hueca');
+    expect(svg.includes('→box'), 'nota de parada en la última vuelta');
+  } finally {
+    Math.random = origRandom;
+  }
+
+  lines.push(
+    failures === 0
+      ? 'Ritmo check: entrada por vuelta OK | in-lap marcada OK | goma nueva tras parada OK | escala sin marcadas OK | SVG dos formas OK'
+      : 'Ritmo check: ' + failures + ' FALLOS'
   );
 }
 
@@ -734,6 +867,9 @@ export function runTestHarness(): string {
 
   // Acceptance check 11 (spec 025): start-tyre choice.
   tyrePickSelfCheck(lines);
+
+  // Acceptance check 12 (spec 028): pace chart.
+  paceChartSelfCheck(lines);
 
   return lines.join('\n');
 }

@@ -151,5 +151,7 @@ export function buildRaceStateFromRoster(
     weatherCanChange: Math.random() < eventRainChance(event, RAIN_RACE_CHANCE),
     // Spec 023: no fastest lap until a valid one is completed.
     fastestLap: null,
+    // Spec 028: per-lap log of the player's cars, for the pace chart.
+    playerLaps: {},
   };
 }

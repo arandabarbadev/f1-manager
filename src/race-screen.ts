@@ -22,6 +22,7 @@ import { lateralTarget, stepLateral } from './racing-line';
 import { createNoticeHub } from './notices';
 import { assignDriverCodes } from './driver-codes';
 import { setStartCompound } from './race-builder';
+import { buildPaceChart, PaceSeries } from './pace-chart';
 
 // ============================================================
 // RACE SCREEN (Phase 2)
@@ -176,6 +177,8 @@ export function createRaceScreen(
         <div class="podium"></div>
         <div class="my-results"></div>
         <div class="results-fl hidden"></div>
+        <button type="button" class="btn chart-toggle hidden">Ver ritmo por vuelta</button>
+        <div class="pace-chart hidden"></div>
         <div class="results-list"></div>
         <div class="finance-list"></div>
         <div class="results-total"></div>
@@ -224,6 +227,28 @@ export function createRaceScreen(
   const podiumEl = root.querySelector<HTMLElement>('.podium')!;
   const myResultsEl = root.querySelector<HTMLElement>('.my-results')!;
   const resultsFlEl = root.querySelector<HTMLElement>('.results-fl')!;
+  // Spec 028: on-demand pace chart (race/sprint only).
+  const chartToggleBtn = root.querySelector<HTMLButtonElement>('.chart-toggle')!;
+  const paceChartEl = root.querySelector<HTMLElement>('.pace-chart')!;
+  chartToggleBtn.addEventListener('click', () => {
+    if (paceChartEl.classList.contains('hidden')) {
+      const series = seriesForPaceChart();
+      const legend = series
+        .map(
+          (s, i) =>
+            `<span class="pc-legend-item"><span class="sample${i === 1 ? ' dashed' : ''}"></span>` +
+            `${s.code}${s.dnf ? ' (abandona)' : ''}</span>`
+        )
+        .join('');
+      paceChartEl.innerHTML = `<div class="pc-legend">${legend}</div>` + buildPaceChart(series);
+      paceChartEl.classList.remove('hidden');
+      chartToggleBtn.textContent = 'Ocultar ritmo';
+    } else {
+      paceChartEl.classList.add('hidden');
+      paceChartEl.innerHTML = '';
+      chartToggleBtn.textContent = 'Ver ritmo por vuelta';
+    }
+  });
   const fastestLapEl = root.querySelector<HTMLElement>('.fastest-lap')!;
   introEl.addEventListener('click', endIntro);
   pickGoBtn.addEventListener('click', endPick);
@@ -489,6 +514,10 @@ export function createRaceScreen(
     // Spec 026: a rebuild starts with the phone back to normal.
     autoPaused = false;
     releaseWakeLock();
+    // Spec 028: the chart belongs to the race that just ended.
+    chartToggleBtn.classList.add('hidden');
+    paceChartEl.classList.add('hidden');
+    paceChartEl.innerHTML = '';
     // Spec 012: fresh lateral state and grid sides for this race.
     lateralByCar.clear();
     gridByCar.clear();
@@ -1340,6 +1369,18 @@ export function createRaceScreen(
     event === 'race' ? 'Nueva carrera' : `Repetir ${eventLabel(event).toLowerCase()}`;
   restartBtn.addEventListener('click', () => setup());
 
+  // Spec 028: the player's two cars as chart series (memory only).
+  function seriesForPaceChart(): PaceSeries[] {
+    const codes = assignDriverCodes(state.drivers);
+    return state.cars
+      .filter((c) => c.isPlayerControlled)
+      .map((c) => ({
+        code: codes.get(c.driverId) ?? '',
+        entries: state.playerLaps?.[c.driverId] ?? [],
+        dnf: c.status === 'dnf',
+      }));
+  }
+
   // Phase 4: add the prize money of both player cars to the persistent
   // career budget (exactly once per event) and show the results overlay.
   // Spec 011: quali pays no prize, sprints pay a quarter of the table,
@@ -1492,9 +1533,20 @@ export function createRaceScreen(
     } else {
       resultsFlEl.classList.add('hidden');
     }
+    // Spec 028: the pace chart is offered for race/sprint only, built
+    // ON DEMAND (never delays the results), and lives in memory alone.
+    const anyLaps = seriesForPaceChart().some((s) => s.entries.length > 0);
+    if (event !== 'quali' && anyLaps) {
+      chartToggleBtn.textContent = 'Ver ritmo por vuelta';
+      chartToggleBtn.classList.remove('hidden');
+    } else {
+      chartToggleBtn.classList.add('hidden');
+    }
+    paceChartEl.classList.add('hidden');
+    paceChartEl.innerHTML = '';
+
     resultsListEl.innerHTML = '';
-    for (const r of playerResults) {
-      const row = document.createElement('div');
+    for (const r of playerResults) {      const row = document.createElement('div');
       row.className = 'result-row';
       row.innerHTML = `
         <span class="result-pos">P${r.position}</span>
