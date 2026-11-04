@@ -71,6 +71,7 @@ export const PLAYER_START_STAT = 65; // player cars start below the rival averag
 // ------------------------------------------------------------
 export const MAX_DRIVER_STAT = 95; // same ceiling as the rivals' range
 export const PILOT_COST_PER_POINT = 15; // M€: next level = 15 x (bought + 1)
+export const PILOT_BLOCK_SIZE = 5; // spec 030: upgrades come in +5 blocks
 
 export const PILOT_ATTRS: { id: PilotAttr; label: string; stat: 'pace' | 'consistency' | 'wetSkill' | 'experience' }[] = [
   { id: 'ritmo', label: 'Ritmo', stat: 'pace' },
@@ -83,22 +84,37 @@ export function pilotUpgradeCost(levelsBought: number): number {
   return PILOT_COST_PER_POINT * (levelsBought + 1);
 }
 
-// One +1 purchase attempt: validates the cap and the budget, then
-// bumps the stat and the training ledger. Returns the cost charged
-// (ok: false, cost: 0 = nothing happened). The caller deducts the
-// money from the career budget.
+// Cost of a +steps block (spec 030): EXACTLY the sum of the single
+// steps it contains — the per-point economy does not change, there
+// are just fewer taps.
+export function pilotBlockCost(levelsBought: number, steps: number): number {
+  let cost = 0;
+  for (let i = 0; i < steps; i++) cost += pilotUpgradeCost(levelsBought + i);
+  return cost;
+}
+
+// One +steps purchase attempt (spec 030: blocks of 5, trimmed at the
+// cap — near 95 only the missing points are applied and charged).
+// Validates the cap and the budget, then bumps the stat and the
+// training ledger, which keeps counting POINTS (so existing saves
+// continue their price curve where they left it). Returns the cost
+// charged (ok: false, cost: 0 = nothing happened). The caller deducts
+// the money from the career budget.
 export function applyPilotUpgrade(
   driver: Driver,
   attrId: PilotAttr,
-  budget: number
+  budget: number,
+  steps: number = PILOT_BLOCK_SIZE
 ): { ok: boolean; cost: number } {
   const attr = PILOT_ATTRS.find((a) => a.id === attrId)!;
-  if (driver[attr.stat] >= MAX_DRIVER_STAT) return { ok: false, cost: 0 };
+  const remaining = MAX_DRIVER_STAT - driver[attr.stat];
+  if (remaining <= 0) return { ok: false, cost: 0 };
+  const applied = Math.min(steps, remaining);
   const bought = driver.training?.[attrId] ?? 0;
-  const cost = pilotUpgradeCost(bought);
+  const cost = pilotBlockCost(bought, applied);
   if (budget < cost) return { ok: false, cost: 0 };
-  driver[attr.stat] += 1;
-  driver.training = { ...driver.training, [attrId]: bought + 1 };
+  driver[attr.stat] += applied;
+  driver.training = { ...driver.training, [attrId]: bought + applied };
   return { ok: true, cost };
 }
 

@@ -13,7 +13,8 @@ import {
   driverVal,
   MAX_DRIVER_STAT,
   PILOT_ATTRS,
-  pilotUpgradeCost,
+  PILOT_BLOCK_SIZE,
+  pilotBlockCost,
   applyPilotUpgrade,
   setDriverNumber,
   Roster,
@@ -460,9 +461,13 @@ export function createTeamScreen(
       for (const attr of PILOT_ATTRS) {
         const value = driver[attr.stat];
         const bought = driver.training?.[attr.id] ?? 0;
-        // Rising cost per bought level, NO engineers discount: this
-        // is staff, not car parts.
-        const cost = pilotUpgradeCost(bought);
+        // Spec 030: upgrades come in +5 blocks (trimmed at the cap).
+        // The block costs EXACTLY the sum of its single steps — rising
+        // per bought level, NO engineers discount: this is staff, not
+        // car parts.
+        const remaining = MAX_DRIVER_STAT - value;
+        const steps = Math.min(PILOT_BLOCK_SIZE, remaining);
+        const cost = pilotBlockCost(bought, steps);
         const row = document.createElement('div');
         row.className = 'dev-row';
         row.innerHTML = `
@@ -473,7 +478,7 @@ export function createTeamScreen(
         levelEl.textContent = `${value}/${MAX_DRIVER_STAT}`;
         const btn = row.querySelector<HTMLButtonElement>('.dev-btn')!;
         const maxed = value >= MAX_DRIVER_STAT;
-        btn.textContent = maxed ? 'MÁX' : `+1 · ${cost} M€`;
+        btn.textContent = maxed ? 'MÁX' : `+${steps} · ${cost} M€`;
         btn.disabled = maxed || career.budget < cost;
         btn.addEventListener('click', () => {
           // Shared validation + mutation (also covered by the harness).

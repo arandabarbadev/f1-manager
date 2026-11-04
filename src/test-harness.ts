@@ -16,7 +16,8 @@ import {
   driverVal,
   MAX_DRIVER_STAT,
   PILOT_ATTRS,
-  pilotUpgradeCost,
+  PILOT_BLOCK_SIZE,
+  pilotBlockCost,
   setDriverNumber,
 } from './roster';
 import { assignDriverCodes, driverCodeBase } from './driver-codes';
@@ -369,30 +370,46 @@ function pilotsSelfCheck(lines: string[]): void {
     'val = media de las 4'
   );
 
-  // First upgrade: pick an attribute that is not maxed yet (a random
-  // roster can start at 95 — the UI shows MÁX there, the purchase is
-  // legitimately impossible).
-  const attr = PILOT_ATTRS.find((a) => driver[a.stat] < MAX_DRIVER_STAT) ?? PILOT_ATTRS[0];
+  // First upgrade (spec 030: +5 blocks): pick an attribute with room
+  // for a whole block (a random roster can start high — the UI trims
+  // the block there, see the edge check below).
+  const attr = PILOT_ATTRS.find((a) => driver[a.stat] <= MAX_DRIVER_STAT - PILOT_BLOCK_SIZE)
+    ?? PILOT_ATTRS.find((a) => driver[a.stat] < MAX_DRIVER_STAT)
+    ?? PILOT_ATTRS[0];
   const statBefore = driver[attr.stat];
-  const first = applyPilotUpgrade(driver, attr.id, 200);
-  expect(first.ok && first.cost === 15, 'primer nivel cuesta 15');
-  expect(driver[attr.stat] === statBefore + 1, attr.label + ' sube la stat real');
-  expect((driver.training?.[attr.id] ?? 0) === 1, 'ledger del training');
-  expect(pilotUpgradeCost(1) === 30, 'el segundo nivel cuesta 30');
+  const steps = Math.min(PILOT_BLOCK_SIZE, MAX_DRIVER_STAT - statBefore);
+  const expected = pilotBlockCost(0, steps);
+  const first = applyPilotUpgrade(driver, attr.id, 500);
+  expect(first.ok && first.cost === expected, 'bloque cuesta la suma de sus pasos (' + expected + ')');
   expect(
-    driverVal(driver) === before || driverVal(driver) === before + 1,
-    'val sigue a la media (redondeo)'
+    steps === PILOT_BLOCK_SIZE ? first.cost === 15 + 30 + 45 + 60 + 75 : true,
+    'bloque de 5 = 15+30+45+60+75 (economia por punto intacta)'
+  );
+  expect(driver[attr.stat] === statBefore + steps, attr.label + ' sube +' + steps + ' de golpe');
+  expect((driver.training?.[attr.id] ?? 0) === steps, 'ledger cuenta los puntos del bloque');
+  expect(pilotBlockCost(steps, PILOT_BLOCK_SIZE) === 90 + 105 + 120 + 135 + 150, 'el siguiente bloque sigue la curva');
+  expect(
+    driverVal(driver) === Math.round((driver.pace + driver.consistency + driver.wetSkill + driver.experience) / 4),
+    'val sigue a la media tras el bloque'
   );
 
-  // Broke team: no purchase, no change.
-  const statMid = driver[attr.stat];
-  expect(applyPilotUpgrade(driver, attr.id, 5).ok === false, 'sin dinero no compra');
-  expect(driver[attr.stat] === statMid, 'sin dinero no cambia la stat');
-
-  // Cap: a maxed stat cannot be bought even with money.
-  driver[attr.stat] = MAX_DRIVER_STAT;
+  // Edge of the cap: 2 points left — the block trims to +2 and only
+  // charges those two steps.
+  const ledgerMid = driver.training?.[attr.id] ?? 0;
+  driver[attr.stat] = MAX_DRIVER_STAT - 2;
+  const trimmed = applyPilotUpgrade(driver, attr.id, 9999);
+  expect(
+    trimmed.ok && trimmed.cost === pilotBlockCost(ledgerMid, 2),
+    'borde del tope: cobra solo los pasos que faltan'
+  );
+  expect(driver[attr.stat] === MAX_DRIVER_STAT, 'borde del tope: llega exacto a 95');
   expect(applyPilotUpgrade(driver, attr.id, 9999).ok === false, 'tope 95 bloqueado');
-  driver[attr.stat] = statMid; // restore
+
+  // Broke team: no purchase, no change (an attribute with room).
+  const attr2 = PILOT_ATTRS.find((a) => a.id !== attr.id && driver[a.stat] < MAX_DRIVER_STAT) ?? attr;
+  const stat2 = driver[attr2.stat];
+  expect(applyPilotUpgrade(driver, attr2.id, 5).ok === false, 'sin dinero para el bloque no compra');
+  expect(driver[attr2.stat] === stat2, 'sin dinero no cambia la stat');
 
   // Race numbers: 1-99, unique across the whole grid.
   expect(setDriverNumber(roster, player, 0, 44) === true, 'dorsal 44 aceptado');
@@ -404,7 +421,7 @@ function pilotsSelfCheck(lines: string[]): void {
 
   lines.push(
     failures === 0
-      ? 'Pilotos check: mejora real OK | coste creciente OK | tope OK | val media OK | dorsales unicos OK'
+      ? 'Pilotos check: bloques +5 OK | economia = suma de pasos OK | borde del tope OK | val media OK | dorsales unicos OK'
       : 'Pilotos check: ' + failures + ' FALLOS'
   );
 }
