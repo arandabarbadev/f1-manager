@@ -4,6 +4,8 @@ import { eventShortLabel } from './weekend';
 import { getTrackById } from './tracks-generator';
 import { themeButtonLabel, toggleTheme } from './theme';
 import { scheduleCloudSync } from './cloud';
+import { evolveRivals, loadRoster, saveRoster, RivalGain } from './roster';
+import { DIFFICULTY_PRESETS } from './difficulty';
 
 // ============================================================
 // SEASON SCREEN (Phase 6): end-of-season summary. Lists every
@@ -16,6 +18,24 @@ import { scheduleCloudSync } from './cloud';
 export function createSeasonScreen(container: HTMLElement, onExit: () => void): void {
   container.innerHTML = '';
   const career = getOrCreateCareer();
+
+  // Spec 029: the season close is when the rival teams' cars improve a
+  // little — once per season (idempotent marker on the roster), scaled
+  // by this save's difficulty. The gains are shown below so the next
+  // season's difficulty is understood, not just felt. Existing saves
+  // (roster v1, marker absent) evolve at their NEXT close.
+  let rivalGains: RivalGain[] = [];
+  const roster = loadRoster();
+  if (
+    roster &&
+    isSeasonComplete(career) &&
+    (roster.rivalEvolvedThroughSeason ?? 0) < career.seasonNumber
+  ) {
+    rivalGains = evolveRivals(roster, DIFFICULTY_PRESETS[career.difficulty].rivalGrowth);
+    roster.rivalEvolvedThroughSeason = career.seasonNumber;
+    saveRoster(roster);
+    scheduleCloudSync();
+  }
 
   const root = document.createElement('div');
   root.className = 'season-screen';
@@ -74,17 +94,47 @@ export function createSeasonScreen(container: HTMLElement, onExit: () => void): 
   card.appendChild(totals);
 
   // Phase 7 celebration: count-up of the money won (plain rAF, no libs).
+  // Spec 027: with reduced motion the final value lands directly.
   const countEl = card.querySelector<HTMLElement>('.count-total')!;
-  const startAt = performance.now();
-  const DURATION_MS = 1600;
-  const step = (t: number): void => {
-    const p = Math.min(1, (t - startAt) / DURATION_MS);
-    const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
-    countEl.textContent = String(Math.round(total * eased));
-    if (p < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
+  const reducedMotion =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reducedMotion) {
+    countEl.textContent = String(total);
+  } else {
+    const startAt = performance.now();
+    const DURATION_MS = 1600;
+    const step = (t: number): void => {
+      const p = Math.min(1, (t - startAt) / DURATION_MS);
+      const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      countEl.textContent = String(Math.round(total * eased));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
 
+  // Spec 029: who got better while you were winning — the top 3.
+  let rivalsCard: HTMLElement | null = null;
+  if (rivalGains.length > 0) {
+    rivalsCard = document.createElement('section');
+    rivalsCard.className = 'card cut rival-growth';
+    const top = [...rivalGains].sort((a, b) => b.gain - a.gain).slice(0, 3);
+    rivalsCard.innerHTML = `
+      <h2>Los rivales no se duermen</h2>
+      <p class="rival-growth-hint">Al cerrar la temporada sus coches mejoran (dificultad ${
+        DIFFICULTY_PRESETS[career.difficulty].label.toLowerCase()
+      }). Estos son los que más han progresado:</p>
+      <div class="rival-growth-list"></div>`;
+    const growthList = rivalsCard.querySelector<HTMLElement>('.rival-growth-list')!;
+    for (const g of top) {
+      const row = document.createElement('div');
+      row.className = 'rival-growth-row';
+      row.innerHTML = '<span class="team"></span><span class="gain"></span>';
+      row.querySelector<HTMLElement>('.team')!.textContent = g.teamName;
+      row.querySelector<HTMLElement>('.gain')!.textContent = `+${g.gain}`;
+      growthList.appendChild(row);
+    }
+  }
   const actions = document.createElement('div');
   actions.className = 'season-actions';
   const newSeasonBtn = document.createElement('button');
@@ -110,6 +160,7 @@ export function createSeasonScreen(container: HTMLElement, onExit: () => void): 
   card.appendChild(actions);
 
   main.appendChild(card);
+  if (rivalsCard) main.appendChild(rivalsCard); // under the summary
   root.appendChild(main);
   container.appendChild(root);
 }

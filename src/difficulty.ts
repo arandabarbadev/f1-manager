@@ -19,6 +19,9 @@ export interface DifficultyPreset {
   sponsorPayMin: number; // M€ per race, worst sponsor (#1)
   sponsorPayMax: number; // M€ per race, best sponsor (#150)
   prizeScale: number; // multiplier on the prize table
+  // Spec 029: how hard the rival teams' cars improve at each season
+  // close (easy drifts back, hard keeps them on your heels).
+  rivalGrowth: number;
 }
 
 export const DIFFICULTY_PRESETS: Record<Difficulty, DifficultyPreset> = {
@@ -30,6 +33,7 @@ export const DIFFICULTY_PRESETS: Record<Difficulty, DifficultyPreset> = {
     sponsorPayMin: 0.5,
     sponsorPayMax: 5.0,
     prizeScale: 1.5,
+    rivalGrowth: 0.5,
   },
   normal: {
     id: 'normal',
@@ -39,6 +43,7 @@ export const DIFFICULTY_PRESETS: Record<Difficulty, DifficultyPreset> = {
     sponsorPayMin: 0.4, // survives the 0.1 rounding (0.45 would read 0.5)
     sponsorPayMax: 4.5,
     prizeScale: 1.25,
+    rivalGrowth: 1.0,
   },
   hard: {
     id: 'hard',
@@ -50,6 +55,7 @@ export const DIFFICULTY_PRESETS: Record<Difficulty, DifficultyPreset> = {
     sponsorPayMin: 0.3,
     sponsorPayMax: 3.0,
     prizeScale: 1,
+    rivalGrowth: 1.6,
   },
 };
 

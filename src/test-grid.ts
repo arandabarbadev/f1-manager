@@ -65,7 +65,7 @@ function buildTestRoster(): Roster {
     return { team, drivers, cars };
   });
 
-  return { version: 1, playerTeamId: 'team-0', entries };
+  return { version: 2, playerTeamId: 'team-0', entries, rivalEvolvedThroughSeason: 0 };
 }
 
 export function buildTestRaceState(): RaceState {

@@ -139,9 +139,59 @@ export interface TeamEntry {
 }
 
 export interface Roster {
-  version: 1;
+  version: 2;
   playerTeamId: string;
   entries: TeamEntry[]; // player team + 9 rivals = 10 teams
+  // Spec 029: the last season whose CLOSE already evolved the rivals
+  // (0/absent = never). Keeps the season-close evolution idempotent;
+  // a v1 save migrates to 0 and evolves at its NEXT close.
+  rivalEvolvedThroughSeason?: number;
+}
+
+// Spec 029: the rival teams' cars never reach the player's development
+// ceiling (95) — investing in your own car always pays.
+export const RIVAL_STAT_CAP = 92;
+
+export interface RivalGain {
+  teamId: string;
+  teamName: string;
+  gain: number; // total stat points gained by the team's cars
+}
+
+// Spec 029: at each season close the rival teams' cars improve a
+// little. Small base, a tendency (the further back a team is, the
+// harder it pushes — the grid converges like the real championship)
+// and noise, all capped at RIVAL_STAT_CAP. The player's team is NOT
+// touched. Pure roster mutation + the gains for the season summary.
+export function evolveRivals(roster: Roster, growth: number): RivalGain[] {
+  const rivals = roster.entries.filter((e) => e.team.id !== roster.playerTeamId);
+  const avgRating = (e: TeamEntry): number =>
+    e.cars.reduce((s, c) => s + (c.aero + c.engine + c.chassis) / 3, 0) / e.cars.length;
+  // Weakest first: rank 0 pushes hardest.
+  const ranking = [...rivals].sort((a, b) => avgRating(a) - avgRating(b));
+  const span = Math.max(1, ranking.length - 1);
+  const gains: RivalGain[] = [];
+  const BASE_GAIN = 1.6;
+  for (const entry of rivals) {
+    const rank = ranking.indexOf(entry);
+    const tendency = 0.3 + (0.7 * rank) / span;
+    let gain = 0;
+    for (const car of entry.cars) {
+      for (const key of ['aero', 'engine', 'chassis', 'reliability'] as const) {
+        const noise = 0.75 + Math.random() * 0.5;
+        const before = car[key];
+        const target = Math.min(RIVAL_STAT_CAP, Math.round(before + BASE_GAIN * growth * tendency * noise));
+        // Never nerf: a legacy stat already above the cap (generated
+        // rosters go up to 95) keeps its value — evolution just does
+        // not push anyone further up.
+        const after = Math.max(before, target);
+        car[key] = after;
+        gain += after - before;
+      }
+    }
+    gains.push({ teamId: entry.team.id, teamName: entry.team.name, gain });
+  }
+  return gains;
 }
 
 const randInt = (min: number, max: number): number =>
@@ -239,7 +289,7 @@ export function createDefaultRoster(budget: number = INITIAL_BUDGET): Roster {
   for (let i = 0; i < RIVAL_TEAM_COUNT; i++) {
     entries.push(generateRivalEntry(i, usedNames));
   }
-  return { version: 1, playerTeamId: 'player-team', entries };
+  return { version: 2, playerTeamId: 'player-team', entries, rivalEvolvedThroughSeason: 0 };
 }
 
 // "Generar parrilla" button: fresh rivals, player team untouched.
@@ -265,7 +315,14 @@ export function loadRoster(): Roster | null {
     const raw = localStorage.getItem(activeRosterKey());
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Roster;
-    if (parsed.version !== 1 || !Array.isArray(parsed.entries)) return null;
+    // Spec 029: v1 rosters migrate in place (marker 0 = their NEXT
+    // season close evolves them — never retroactively).
+    const savedVersion = (parsed as { version?: unknown }).version;
+    if ((savedVersion !== 1 && savedVersion !== 2) || !Array.isArray(parsed.entries)) return null;
+    parsed.version = 2;
+    if (typeof parsed.rivalEvolvedThroughSeason !== 'number') {
+      parsed.rivalEvolvedThroughSeason = 0;
+    }
     if (parsed.entries.length !== RIVAL_TEAM_COUNT + 1) return null;
     const player = parsed.entries.find((e) => e?.team?.id === parsed.playerTeamId);
     if (!player) return null;

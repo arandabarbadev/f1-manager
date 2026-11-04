@@ -111,3 +111,39 @@
 .season-actions .btn {
   flex: 1;
 }
+
+/* Spec 029: rival progression at the season close — who to fear next
+   year. Same card language as the summary above. */
+.rival-growth {
+  margin-top: 12px;
+}
+
+.rival-growth h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.rival-growth-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.rival-growth-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.rival-growth-row:last-child {
+  border-bottom: none;
+}
+
+.rival-growth-row .gain {
+  color: var(--accent-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

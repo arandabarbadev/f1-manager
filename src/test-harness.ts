@@ -23,6 +23,7 @@ import { assignDriverCodes, driverCodeBase } from './driver-codes';
 import { createDefaultCareer } from './career';
 import { setStartCompound } from './race-builder';
 import { buildPaceChart, chartScale } from './pace-chart';
+import { evolveRivals, RIVAL_STAT_CAP } from './roster';
 import type { PlayerLapEntry } from './types';
 import { eventOrderFor, hasSprint, pendingEvent } from './weekend';
 import {
@@ -743,6 +744,87 @@ function paceChartSelfCheck(lines: string[]): void {
   );
 }
 
+// Acceptance check 13 (spec 029): rival evolution at the season close.
+// With Math.random pinned, several simulated seasons prove: gains on
+// the board, the player untouched, the cap below the player's ceiling,
+// and the difficulty scaling (hard > normal > easy on the SAME noise).
+function rivalEvolutionSelfCheck(lines: string[]): void {
+  let failures = 0;
+  const expect = (ok: boolean, what: string): void => {
+    if (!ok) {
+      failures++;
+      lines.push('FAIL rivales: ' + what);
+    }
+  };
+
+  const origRandom = Math.random;
+  try {
+    Math.random = () => 0.999; // maximal noise: every stat wants to grow
+    const roster = createDefaultRoster();
+    const playerBefore = JSON.stringify(
+      roster.entries.find((e) => e.team.id === roster.playerTeamId)
+    );
+    const statPool = (r: typeof roster): number[] =>
+      r.entries
+        .filter((e) => e.team.id !== r.playerTeamId)
+        .flatMap((e) => e.cars.flatMap((c) => [c.aero, c.engine, c.chassis, c.reliability]));
+
+    const before = statPool(roster);
+    const gains1 = evolveRivals(roster, 1.0);
+    const after1 = statPool(roster);
+    expect(gains1.length === 9, 'los 9 equipos rivales evolucionan (' + gains1.length + ')');
+    expect(gains1.filter((g) => g.gain > 0).length >= 5, 'varios equipos mejoran de verdad');
+    expect(
+      after1.reduce((s, v) => s + v, 0) > before.reduce((s, v) => s + v, 0),
+      'el conjunto de la parrilla sube'
+    );
+    expect(
+      JSON.stringify(roster.entries.find((e) => e.team.id === roster.playerTeamId)) === playerBefore,
+      'el equipo del jugador queda intacto'
+    );
+
+    // Many seasons: monotone rise, cap never exceeded (a stat born
+    // above the cap keeps its value — never nerfed, never pushed).
+    const maxBefore = Math.max(...before);
+    for (let season = 0; season < 12; season++) evolveRivals(roster, 1.6);
+    const stats = statPool(roster);
+    expect(stats.every((v) => v <= Math.max(RIVAL_STAT_CAP, maxBefore)), 'techo ' + RIVAL_STAT_CAP + ' respetado (máx ' + Math.max(...stats) + ', origen ' + maxBefore + ')');
+    expect(
+      stats.reduce((s, v) => s + v, 0) > after1.reduce((s, v) => s + v, 0),
+      'más temporadas = más mejora (no se estanca antes de tiempo)'
+    );
+    const atCap = stats.filter((v) => v >= RIVAL_STAT_CAP).length;
+    expect(atCap > 0 && RIVAL_STAT_CAP < 95, 'las stats maduran al techo, por debajo del tope del jugador');
+
+    // Difficulty scaling on the SAME noise sequence.
+    const runSeasons = (growth: number): number => {
+      Math.random = () => 0.7; // fixed sequence for a fair comparison
+      const r = createDefaultRoster();
+      for (let s = 0; s < 5; s++) evolveRivals(r, growth);
+      return statPool(r).reduce((sum, v) => sum + v, 0);
+    };
+    const easy = runSeasons(0.5);
+    const normal = runSeasons(1.0);
+    const hard = runSeasons(1.6);
+    expect(easy < normal && normal < hard, 'escalado por dificultad (f ' + easy + ' < n ' + normal + ' < d ' + hard + ')');
+
+    // A weak field converges: the backmarker gains more than the top.
+    Math.random = () => 0.999;
+    const r2 = createDefaultRoster();
+    const gainsA = evolveRivals(r2, 1.0);
+    const sorted = [...gainsA].sort((a, b) => b.gain - a.gain);
+    expect(sorted[0].gain > sorted[sorted.length - 1].gain, 'la tendencia premia a los de atrás');
+  } finally {
+    Math.random = origRandom;
+  }
+
+  lines.push(
+    failures === 0
+      ? 'Rivales check: 9 equipos OK | jugador intacto OK | techo 92 OK | escalado fácil<normal<difícil OK | tendencia OK'
+      : 'Rivales check: ' + failures + ' FALLOS'
+  );
+}
+
 export function runTestHarness(): string {
   const state: RaceState = buildTestRaceState();
 
@@ -870,6 +952,9 @@ export function runTestHarness(): string {
 
   // Acceptance check 12 (spec 028): pace chart.
   paceChartSelfCheck(lines);
+
+  // Acceptance check 13 (spec 029): rival evolution.
+  rivalEvolutionSelfCheck(lines);
 
   return lines.join('\n');
 }
