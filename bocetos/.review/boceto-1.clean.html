@@ -1,0 +1,863 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Boceto 1 · Gran Premio — Motorsport Manager</title>
+<style>
+  /* ============================================================
+     BOCETO 1 · GRAN PREMIO
+     Mundo: el póster de carrera (litografía de Gran Premio).
+     Tinta plana vermillion comprometida en todo el chrome,
+     papel para los datos, tipografía condensada monumental,
+     cortes diagonales como única seña de movimiento.
+     Fuente display auto-hospedada (base64): Barlow Condensed 700.
+     Fuente de texto: Inter variable (base64). Nada externo.
+     ============================================================ */
+
+  @font-face {
+    font-family: 'Barlow Condensed';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url(data:font/woff2;base64,__FUENTE_EMBEBIDA__) format('woff2');
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url(data:font/woff2;base64,__FUENTE_EMBEBIDA__) format('woff2');
+  }
+
+  :root {
+    --accent: #e10600;            /* librea del jugador (dinámica) */
+    --ink: #191512;               /* tinta negra cálida */
+    --ink-soft: #5d564a;          /* tinta secundaria */
+    --paper: #f3efe7;             /* papel */
+    --paper-2: #e9e3d4;           /* papel de formulario */
+    --hairline: rgba(25, 21, 18, 0.22);
+    --on-accent: #ffffff;
+    --font-display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+    --font-ui: 'Inter', system-ui, 'Segoe UI', sans-serif;
+    --cut: 14px;                  /* corte diagonal del mundo póster */
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scrollbar-color: var(--ink) var(--paper-2); }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+    caret-color: var(--ink);
+  }
+
+  ::selection { background: var(--accent); color: var(--on-accent); }
+
+  :is(button, input, a):focus-visible {
+    outline: 2.5px solid var(--ink);
+    outline-offset: 2px;
+  }
+  .on-red :is(button, a):focus-visible,
+  button.on-red:focus-visible {
+    outline-color: var(--paper);
+  }
+
+  /* ---------- Mastique (cabecera póster) ---------- */
+
+  .mast {
+    background: var(--accent);
+    color: var(--on-accent);
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    padding: 0 18px;
+    min-height: 62px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    align-self: center;
+    white-space: nowrap;
+  }
+  .wordmark small { font-size: 15px; letter-spacing: 0.14em; }
+
+  .mast-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Presupuesto: etiqueta-precio del cartel */
+  .budget {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-display);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+    padding: 6px 14px 6px 12px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .budget .val { font-size: 26px; font-weight: 700; line-height: 1; }
+  .budget .unit { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
+
+  .btn {
+    font: 700 15px/1 var(--font-display);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: none;
+    border: 2px solid var(--on-accent);
+    color: var(--on-accent);
+    padding: 9px 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: none;
+  }
+  .btn:hover { background: var(--ink); border-color: var(--ink); }
+
+  .btn svg { width: 12px; height: 12px; }
+
+  /* Menú Más */
+  .more { position: relative; }
+  .more-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    min-width: 220px;
+    padding: 6px;
+    display: none;
+    z-index: 40;
+  }
+  .more.open .more-menu { display: block; }
+  .more-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    color: var(--ink);
+    font: 600 15px/1 var(--font-display);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+  .more-menu button:hover { background: var(--ink); color: var(--paper); }
+  .more-menu .danger:hover { background: var(--accent); color: var(--on-accent); }
+
+  /* ---------- Shell: riel + campo ---------- */
+
+  .shell {
+    display: grid;
+    grid-template-columns: 216px 1fr;
+    min-height: calc(100vh - 62px);
+  }
+
+  .rail {
+    background: var(--accent);
+    color: var(--on-accent);
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: sticky;
+    top: 62px;
+    height: calc(100vh - 62px);
+  }
+
+  .rail-tab {
+    font: 700 17px/1 var(--font-display);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: left;
+    background: none;
+    border: 2px solid transparent;
+    color: var(--on-accent);
+    padding: 11px 12px;
+    cursor: pointer;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+  }
+  .rail-tab:hover { background: rgba(25, 21, 18, 0.22); }
+  .rail-tab.active {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .rail-spacer { flex: 1; }
+
+  .race-slab {
+    font: 700 21px/1.05 var(--font-display);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: 0;
+    padding: 16px 14px;
+    cursor: pointer;
+    text-align: left;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .race-slab:hover { background: #000; }
+  .race-slab .sub { font-size: 15px; font-weight: 700; opacity: 0.85; letter-spacing: 0.08em; }
+  .race-slab.lights-out { background: #00a33f; color: #fff; }
+
+  .lights { display: flex; gap: 6px; }
+  .lights i {
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    border: 2px solid var(--paper);
+    display: inline-block;
+  }
+  .lights i.on { background: var(--accent); border-color: var(--accent); }
+
+  /* ---------- Campo (main) ---------- */
+
+  .field {
+    padding: 34px clamp(18px, 4vw, 56px) 90px;
+    max-width: 1120px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* Hero: el cartel de tu escudería */
+  .hero {
+    background: var(--accent);
+    color: var(--on-accent);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 26px), calc(100% - 52px) 100%, 0 100%);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 32px;
+    align-items: end;
+    padding: 30px 34px 40px;
+    margin-bottom: 38px;
+  }
+  .hero h1 {
+    margin: 0;
+    font: 700 clamp(46px, 7vw, 84px)/0.94 var(--font-display);
+    letter-spacing: -0.005em;
+    text-transform: uppercase;
+  }
+  .hero .dateline {
+    font: 700 16px/1.4 var(--font-display);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 10px;
+  }
+  .hero .price {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .hero .price .num {
+    font: 700 clamp(44px, 6vw, 72px)/1 var(--font-display);
+  }
+  .hero .price .lbl {
+    font: 700 15px/1 var(--font-display);
+    letter-spacing: 0.14em;
+  }
+  .delta {
+    font: 700 15px/1 var(--font-display);
+    background: var(--paper);
+    color: var(--ink);
+    padding: 4px 10px;
+    margin-top: 8px;
+    visibility: hidden;
+  }
+  .delta.show { visibility: visible; }
+
+  /* Atajos: billetes pequeños del cartel */
+  .shortcuts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 46px;
+  }
+  .shortcuts button {
+    font: 700 15px/1 var(--font-display);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    color: var(--ink);
+    padding: 10px 16px;
+    cursor: pointer;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+  }
+  .shortcuts button:hover { background: var(--ink); color: var(--paper); }
+
+  h2 {
+    font: 700 30px/1 var(--font-display);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin: 46px 0 6px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid var(--ink);
+  }
+
+  /* Identidad: formulario del cartel */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px 26px;
+    margin-top: 22px;
+  }
+  .form-grid label {
+    display: grid;
+    gap: 7px;
+    font: 700 12px/1 var(--font-display);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .form-grid input {
+    font: 600 16px/1.3 var(--font-ui);
+    color: var(--ink);
+    background: var(--paper-2);
+    border: 0;
+    border-bottom: 2.5px solid var(--ink);
+    padding: 10px 10px 9px;
+    border-radius: 0;
+    width: 100%;
+  }
+  .form-grid input:focus-visible {
+    outline: none;
+    border-bottom-color: var(--accent);
+    border-bottom-width: 3.5px;
+  }
+  input[type='color'] {
+    padding: 4px;
+    height: 44px;
+    cursor: pointer;
+  }
+  input[type='color']::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type='color']::-webkit-color-swatch { border: 2px solid var(--ink); }
+  input[type='color']::-moz-color-swatch { border: 2px solid var(--ink); }
+
+  /* Desarrollo: la lista de tintas */
+  .dev-head,
+  .dev-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 230px) 74px 1fr 158px;
+    gap: 18px;
+    align-items: center;
+  }
+  .dev-head {
+    font: 700 12px/1 var(--font-display);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 0 2px 8px;
+    border-bottom: 2px solid var(--ink);
+    margin-top: 22px;
+  }
+  .dev-row {
+    padding: 12px 2px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .dev-row .name { font-weight: 600; font-size: 15px; }
+  .dev-row .lvl {
+    font: 700 21px/1 var(--font-display);
+    letter-spacing: 0.02em;
+  }
+  .dev-row .lvl small { font-size: 14px; color: var(--ink-soft); }
+
+  .meter {
+    display: flex;
+    gap: 3px;
+    height: 18px;
+    padding: 2.5px;
+    border: 2px solid var(--ink);
+  }
+  .meter i { flex: 1; background: transparent; }
+  .meter i.fill { background: var(--accent); }
+  .meter.maxed i.fill { background: var(--ink); }
+
+  .dev-buy {
+    font: 700 15px/1 var(--font-display);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: 2px solid var(--ink);
+    padding: 10px 12px;
+    cursor: pointer;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+    text-align: center;
+  }
+  .dev-buy:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
+  .dev-buy:disabled {
+    background: transparent;
+    color: var(--ink-soft);
+    border-color: var(--hairline);
+    cursor: not-allowed;
+  }
+  .dev-buy:disabled .cost { text-decoration: line-through; }
+
+  /* El sello MÁX: los estados se estampan, no desaparecen */
+  .stamp {
+    font: 700 17px/1 var(--font-display);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 3px solid var(--accent);
+    padding: 6px 12px;
+    transform: rotate(-5deg);
+    justify-self: center;
+    display: inline-block;
+  }
+  .meter.maxed + .cell-action .stamp { color: var(--ink); border-color: var(--ink); }
+
+  .cell-action { display: flex; justify-content: flex-end; }
+
+  /* Panel de pestañas no diseñadas en el boceto */
+  .notice {
+    border: 2px solid var(--ink);
+    padding: 26px 28px;
+    margin-top: 40px;
+    max-width: 560px;
+  }
+  .notice strong {
+    display: block;
+    font: 700 24px/1.1 var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 8px;
+  }
+  .notice p { margin: 0; color: var(--ink-soft); font-size: 14px; }
+
+  /* Aviso (toast): tarjeta estampada */
+  .toast {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%);
+    padding: 14px 18px;
+    max-width: min(340px, calc(100vw - 36px));
+    z-index: 60;
+  }
+  .toast .t-title {
+    font: 700 17px/1.1 var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+  }
+  .toast .t-body { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+
+  footer {
+    padding: 26px 18px 120px;
+    font: 700 11px/1.5 var(--font-display);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Móvil ---------- */
+
+  .tabs-row,
+  .race-bar { display: none; }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; }
+    .rail { display: none; }
+    .mast { padding: 0 12px; }
+    .wordmark { font-size: 19px; }
+    .budget .val { font-size: 20px; }
+
+    .tabs-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 10px 12px;
+      background: var(--accent);
+      position: sticky;
+      top: 62px;
+      z-index: 25;
+      scrollbar-width: none;
+    }
+    .tabs-row::-webkit-scrollbar { display: none; }
+    .tabs-row button {
+      flex: none;
+      font: 700 15px/1 var(--font-display);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: none;
+      color: var(--on-accent);
+      border: 2px solid rgba(255, 255, 255, 0.55);
+      padding: 9px 13px;
+    }
+    .tabs-row button.active { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+
+    .race-bar {
+      display: block;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: var(--ink);
+      z-index: 30;
+    }
+    .race-bar .race-slab { width: 100%; clip-path: none; }
+
+    .field { padding-top: 24px; padding-bottom: 40px; }
+    .hero { padding: 22px 20px 30px; grid-template-columns: 1fr; }
+    .hero .price { align-items: flex-start; text-align: left; margin-top: 6px; }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .dev-head { display: none; }
+    .dev-row { grid-template-columns: 1fr auto; grid-template-areas: 'name lvl' 'meter meter' 'action action'; row-gap: 10px; }
+    .dev-row .name { grid-area: name; }
+    .dev-row .lvl { grid-area: lvl; text-align: right; }
+    .dev-row .meter { grid-area: meter; }
+    .dev-row .cell-action { grid-area: action; }
+    .dev-buy { width: 100%; }
+    .toast { bottom: 96px; right: 12px; }
+    footer { padding-bottom: 130px; }
+  }
+
+  /* Movimiento: el cartel se corta, no se funde (y nada si se pide calma) */
+  @media (prefers-reduced-motion: no-preference) {
+    .toast { animation: toast-cut 90ms steps(2, end); }
+    @keyframes toast-cut { from { transform: translateX(14px); opacity: 0.4; } }
+    .rail-tab, .btn, .shortcuts button, .dev-buy, .race-slab { transition: background-color 90ms steps(2, end), color 90ms steps(2, end); }
+  }
+</style>
+</head>
+<body>
+
+<header class="mast on-red">
+  <div class="wordmark">Motorsport<small> Manager</small></div>
+  <div class="mast-right">
+    <div class="budget" title="Presupuesto disponible">
+      <span class="val" id="budget-top">52</span><span class="unit">M€</span>
+    </div>
+    <div class="more" id="more">
+      <button type="button" class="btn" id="more-btn" aria-haspopup="true" aria-expanded="false">
+        Más
+        <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>
+      </button>
+      <div class="more-menu" role="menu">
+        <button type="button" role="menuitem" data-toast="Palmarés|Tu historial de temporadas cerradas: se diseña con la dirección elegida.">Palmarés</button>
+        <button type="button" role="menuitem" data-toast="Partidas|Las 3 partidas guardadas: se diseñan con la dirección elegida.">Partidas</button>
+        <button type="button" role="menuitem" id="reset-btn" class="danger">Reiniciar demo</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="rail on-red" aria-label="Secciones del equipo">
+    <button type="button" class="rail-tab active" data-tab="team" aria-current="page">Mi Equipo</button>
+    <button type="button" class="rail-tab" data-tab="pilots">Pilotos</button>
+    <button type="button" class="rail-tab" data-tab="hq">Sede</button>
+    <button type="button" class="rail-tab" data-tab="rivals">Rivales</button>
+    <button type="button" class="rail-tab" data-tab="sponsors">Patrocinadores</button>
+    <button type="button" class="rail-tab" data-tab="champ">Campeonato</button>
+    <div class="rail-spacer"></div>
+    <button type="button" class="race-slab" id="race-btn">
+      <span class="lights" id="race-lights" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      <span id="race-label">Carrera <span class="sub">R9 · Montreal</span></span>
+    </button>
+  </nav>
+
+  <main class="field">
+    <div id="panel-team">
+      <section class="hero on-red" aria-label="Resumen del equipo">
+        <div>
+          <h1>Escudería Vega</h1>
+          <p class="dateline">P4 Constructores · Temporada 2 · Carrera 9/21</p>
+        </div>
+        <div class="price">
+          <span class="num" id="budget-hero">52</span>
+          <span class="lbl">M€ Disponibles</span>
+          <span class="delta" id="delta" aria-live="polite"></span>
+        </div>
+      </section>
+
+      <div class="shortcuts" aria-label="Accesos">
+        <button type="button" data-tab="pilots">Pilotos</button>
+        <button type="button" data-tab="hq">Sede</button>
+        <button type="button" data-tab="rivals">Rivales</button>
+        <button type="button" data-tab="sponsors">Patrocinadores</button>
+        <button type="button" data-tab="champ">Campeonato</button>
+      </div>
+
+      <h2>Identidad</h2>
+      <div class="form-grid">
+        <label>Nombre del equipo
+          <input type="text" maxlength="24" value="Escudería Vega" />
+        </label>
+        <label>Color de librea
+          <input type="color" id="livery" value="#e10600" aria-describedby="livery-hint" />
+        </label>
+        <p id="livery-hint" style="display:none">La librea tiñe el cartel entero, como en el juego.</p>
+        <label>Piloto 1
+          <input type="text" maxlength="24" value="Enzo Marchetti" />
+        </label>
+        <label>Dorsal 1
+          <input type="number" min="1" max="99" inputmode="numeric" value="27" />
+        </label>
+        <label>Piloto 2
+          <input type="text" maxlength="24" value="Kai Vidal" />
+        </label>
+        <label>Dorsal 2
+          <input type="number" min="1" max="99" inputmode="numeric" value="71" />
+        </label>
+      </div>
+
+      <h2>Desarrollo del coche</h2>
+      <p style="margin:0 0 4px; color:var(--ink-soft); font-size:13px;">Tus 2 coches a la vez · nivel 15 máximo · ingenieros nivel 3 (−10&nbsp;% coste)</p>
+      <div class="dev-head" aria-hidden="true">
+        <span>Pieza</span><span>Nivel</span><span>Progreso</span><span style="text-align:right;">Acción</span>
+      </div>
+      <div id="dev-list"></div>
+    </div>
+
+    <div id="panel-other" hidden>
+      <section class="notice">
+        <strong id="other-title">Pilotos</strong>
+        <p>Este boceto diseña solo la página principal. Si eliges la dirección «Gran Premio», esta pestaña se construirá con su mismo lenguaje: tinta plana, papel y cortes diagonales.</p>
+      </section>
+    </div>
+
+    <footer>Boceto 1 · Dirección «Gran Premio» · Demo estática, sin conexión con el motor del juego</footer>
+  </main>
+</div>
+
+<!-- Navegación en móvil -->
+<div class="tabs-row" aria-label="Secciones del equipo">
+  <button type="button" class="active" data-tab="team" aria-current="page">Mi Equipo</button>
+  <button type="button" data-tab="pilots">Pilotos</button>
+  <button type="button" data-tab="hq">Sede</button>
+  <button type="button" data-tab="rivals">Rivales</button>
+  <button type="button" data-tab="sponsors">Patrocinadores</button>
+  <button type="button" data-tab="champ">Campeonato</button>
+</div>
+<div class="race-bar">
+  <button type="button" class="race-slab" id="race-btn-m">
+    <span class="lights" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+    <span>Carrera <span class="sub">R9 · Montreal</span></span>
+  </button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var MAX = 15;
+  var state = {
+    budget: 52,
+    devs: [
+      { id: 'aero', label: 'Aerodinámica', level: 15 },
+      { id: 'alerones', label: 'Alerones del. y tras.', level: 8 },
+      { id: 'motor', label: 'Motor', level: 12 },
+      { id: 'electronica', label: 'Electrónica', level: 6 },
+      { id: 'chasis', label: 'Chasis', level: 9 },
+      { id: 'suspension', label: 'Suspensión', level: 7 },
+      { id: 'neumaticos', label: 'Neumáticos', level: 10 },
+      { id: 'seguridad', label: 'Seguridad', level: 4 },
+      { id: 'volante', label: 'Volante', level: 5 }
+    ]
+  };
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var INITIAL = JSON.parse(JSON.stringify(state));
+
+  // Coste del siguiente nivel (motor real: 15 + 4·nivel, −10 % ingenieros).
+  function cost(level) { return Math.ceil((15 + 4 * level) * 0.9); }
+
+  var list = document.getElementById('dev-list');
+
+  function meterHTML(level, maxed) {
+    var cells = '';
+    for (var i = 0; i < MAX; i++) cells += '<i class="' + (i < level ? 'fill' : '') + '"></i>';
+    return '<div class="meter' + (maxed ? ' maxed' : '') + '" role="img" aria-label="Nivel ' + level + ' de ' + MAX + '">' + cells + '</div>';
+  }
+
+  function rowHTML(dev) {
+    var maxed = dev.level >= MAX;
+    var c = cost(dev.level);
+    var afford = state.budget >= c;
+    return ''
+      + '<div class="dev-row" data-id="' + dev.id + '">'
+      + '<span class="name">' + dev.label + '</span>'
+      + '<span class="lvl">' + dev.level + '<small>/' + MAX + '</small></span>'
+      + meterHTML(dev.level, maxed)
+      + '<span class="cell-action">'
+      + (maxed
+        ? '<span class="stamp">Máx</span>'
+        : '<button type="button" class="dev-buy"' + (afford ? '' : ' disabled') + '>'
+          + '+1 · <span class="cost">' + c + '</span> M€</button>')
+      + '</span></div>';
+  }
+
+  function renderDevs() {
+    list.innerHTML = state.devs.map(rowHTML).join('');
+  }
+
+  function renderBudget(delta) {
+    var v = Math.round(state.budget);
+    document.getElementById('budget-top').textContent = v;
+    document.getElementById('budget-hero').textContent = v;
+    if (delta !== undefined) {
+      var d = document.getElementById('delta');
+      d.textContent = (delta < 0 ? '−' : '+') + Math.abs(delta) + ' M€';
+      d.classList.add('show');
+      clearTimeout(d._t);
+      d._t = setTimeout(function () { d.classList.remove('show'); }, 1600);
+    }
+  }
+
+  list.addEventListener('click', function (e) {
+    var btn = e.target.closest('.dev-buy');
+    if (!btn || btn.disabled) return;
+    var row = btn.closest('.dev-row');
+    var dev = state.devs.find(function (d) { return d.id === row.dataset.id; });
+    var c = cost(dev.level);
+    if (dev.level >= MAX || state.budget < c) return;
+    state.budget -= c;
+    dev.level += 1;
+    renderDevs();
+    renderBudget(-c);
+  });
+
+  // La librea tiñe el cartel (spec 19 del juego real): el texto sobre
+  // el acento pasa a tinta u blanco según luminancia, como en accent.ts.
+  function luminance(hex) {
+    var n = [1, 3, 5].map(function (i) {
+      var x = parseInt(hex.substr(i, 2), 16) / 255;
+      return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * n[0] + 0.7152 * n[1] + 0.0722 * n[2];
+  }
+  document.getElementById('livery').addEventListener('input', function (e) {
+    var root = document.documentElement.style;
+    root.setProperty('--accent', e.target.value);
+    root.setProperty('--on-accent', luminance(e.target.value) > 0.35 ? '#191512' : '#ffffff');
+  });
+
+  // Pestañas: solo «Mi Equipo» está diseñada en este boceto.
+  var titles = { pilots: 'Pilotos', hq: 'Sede', rivals: 'Rivales', sponsors: 'Patrocinadores', champ: 'Campeonato' };
+  function setTab(id) {
+    document.querySelectorAll('[data-tab]').forEach(function (b) {
+      var on = b.dataset.tab === id;
+      b.classList.toggle('active', on);
+      if (b.hasAttribute('aria-current') || on) b.setAttribute('aria-current', on ? 'page' : 'false');
+    });
+    document.getElementById('panel-team').hidden = id !== 'team';
+    document.getElementById('panel-other').hidden = id === 'team';
+    if (id !== 'team') document.getElementById('other-title').textContent = titles[id];
+    window.scrollTo({ top: 0 });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-tab]');
+    if (b) setTab(b.dataset.tab);
+  });
+
+  // Menú Más + avisos
+  var more = document.getElementById('more');
+  var moreBtn = document.getElementById('more-btn');
+  moreBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    more.classList.toggle('open');
+    moreBtn.setAttribute('aria-expanded', more.classList.contains('open'));
+  });
+  document.addEventListener('click', function (e) {
+    if (!more.contains(e.target)) {
+      more.classList.remove('open');
+      moreBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+  more.addEventListener('click', function (e) {
+    var item = e.target.closest('[data-toast]');
+    if (!item) return;
+    var parts = item.dataset.toast.split('|');
+    toast(parts[0], parts[1]);
+    more.classList.remove('open');
+  });
+  document.getElementById('reset-btn').addEventListener('click', function () {
+    state = JSON.parse(JSON.stringify(INITIAL));
+    renderDevs();
+    renderBudget();
+    more.classList.remove('open');
+    toast('Demo reiniciada', 'Presupuesto y desarrollos vuelven a su estado inicial.');
+  });
+
+  var toastRoot = null;
+  function toast(title, body) {
+    if (toastRoot) toastRoot.remove();
+    toastRoot = document.createElement('div');
+    toastRoot.className = 'toast';
+    toastRoot.setAttribute('role', 'status');
+    toastRoot.innerHTML = '<div class="t-title"></div><div class="t-body"></div>';
+    toastRoot.querySelector('.t-title').textContent = title;
+    toastRoot.querySelector('.t-body').textContent = body;
+    document.body.appendChild(toastRoot);
+    clearTimeout(toastRoot._t);
+    toastRoot._t = setTimeout(function () { toastRoot.remove(); }, 2800);
+  }
+
+  // Salida: semáforo del cartel (5 luces → verde → aviso).
+  function raceSequence(btn, lightsEl) {
+    if (btn._running) return;
+    btn._running = true;
+    var dots = lightsEl ? lightsEl.querySelectorAll('i') : [];
+    var label = btn.querySelector('#race-label') || btn.lastElementChild;
+    if (reduce) {
+      toast('Luces fuera', 'En el juego real, aquí arranca la R9 en Montreal (70 vueltas).');
+      btn._running = false;
+      return;
+    }
+    dots.forEach(function (d) { d.classList.remove('on'); });
+    var i = 0;
+    var step = function () {
+      if (i < dots.length) {
+        dots[i].classList.add('on');
+        i += 1;
+        setTimeout(step, 240);
+      } else {
+        btn.classList.add('lights-out');
+        if (label) label.firstChild.textContent = 'Luces fuera ';
+        setTimeout(function () {
+          btn.classList.remove('lights-out');
+          dots.forEach(function (d) { d.classList.remove('on'); });
+          if (label) label.firstChild.textContent = 'Carrera ';
+          toast('Luces fuera', 'En el juego real, aquí arranca la R9 en Montreal (70 vueltas).');
+          btn._running = false;
+        }, 900);
+      }
+    };
+    setTimeout(step, 200);
+  }
+  document.getElementById('race-btn').addEventListener('click', function () {
+    raceSequence(this, document.getElementById('race-lights'));
+  });
+  document.getElementById('race-btn-m').addEventListener('click', function () {
+    raceSequence(this, this.querySelector('.lights'));
+  });
+
+  renderDevs();
+  renderBudget();
+})();
+</script>
+</body>
+</html>

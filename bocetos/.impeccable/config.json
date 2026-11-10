@@ -1,0 +1,32 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-08T20:03:05.196Z",
+        "reason": "design judgment with product evidence: Inter is the game's own shipped UI font (src/fonts/Inter-var-latin.woff2, ui.css); the bocetos reuse the product's system, and each direction's display voice differs (Barlow Condensed poster / mono timing / Inter Black carbon)"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "bocetos/boceto-1.html"
+        ],
+        "createdAt": "2026-11-08T20:03:05.949Z",
+        "reason": "design judgment: warm paper is the lithographic poster world's data field; the committed color is the vermillion chrome (30-50% of the shell), not a reflex cream ground"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "bocetos/boceto-3.html"
+        ],
+        "createdAt": "2026-11-08T20:03:14.213Z",
+        "reason": "design judgment: the construction grid IS the direction's signature (engineering blueprint/measurement surface), not decoration on a plain surface"
+      }
+    ]
+  }
+}

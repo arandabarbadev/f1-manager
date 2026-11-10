@@ -1,0 +1,32 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "src/team-screen.css"
+        ],
+        "createdAt": "2026-11-10T14:49:38.983Z",
+        "reason": "Contrato de direccion Carbono (.impeccable/surfaces/src-team-screen-ts.md): la rejilla hairline 16/80px es la identidad OWN-WORLD elegida por Rafa, no un motivo decorativo generico"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-10T14:51:42.875Z",
+        "reason": "Fuente propia del producto: ui.css carga Inter como --font-ui en todas las pantallas desde antes del rediseno 032; el hub mantiene la consistencia y la voz viene de los pesos extremos + mono tabular (contrato Carbono)"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "barlow condensed",
+        "files": [
+          "bocetos/*.html"
+        ],
+        "createdAt": "2026-11-10T15:21:06.457Z",
+        "reason": "Los bocetos son artefactos archivados de la ronda de direcciones (anteriores a DESIGN.md): cada uno exhibe deliberadamente un mundo tipografico propio y descartado; no son UI de produccion"
+      }
+    ]
+  }
+}

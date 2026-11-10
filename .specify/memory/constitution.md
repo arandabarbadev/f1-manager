@@ -9,8 +9,10 @@ Ninguna funcionalidad se implementa sin un spec.md que yo haya leído. La spec d
 ### II. Privacidad
 El repositorio es público. Nunca se suben datos personales: ni mi email, ni nombres de profesores o compañeros, ni mis notas, tareas o dinero. Los datos del usuario viven en su navegador.
 
-### III. Sin dependencias por defecto
-HTML, CSS y JavaScript puros, sin librerías, frameworks, fuentes externas ni servicios de terceros. Usar uno es una excepción: se justifica por escrito en el plan, explicando qué problema resuelve y qué alternativa sin dependencias se descartó, y el cliente tiene que aprobarla. Nunca se añade una dependencia en silencio.
+### III. Stack libre, dependencias declaradas
+El framework y las librerías se eligen con libertad: el agente escoge el oportuno para cada proyecto y lo declara en el plan con una línea de por qué. Siguen siendo excepción que se justifica por escrito: las fuentes externas y los servicios de terceros (qué problema resuelven y qué alternativa se descartó). Nunca se añade una dependencia en silencio: todo lo que entra aparece en el plan.
+
+Motivo: Rafa liberó la elección de framework el 2026-11-08; lo que se conserva es la transparencia, no la restricción.
 
 ### IV. Móvil primero
 Se diseña para usarse con una mano, de pie, en el móvil. En el portátil también funciona, pero el móvil manda. Todo el texto en español.
@@ -62,4 +64,4 @@ Si la app tiene service worker, el HTML se pide a la red primero y la caché sol
 - Esta constitución tiene prioridad sobre cualquier plan o tarea. Si el plan la incumple, se dice en el Constitution Check y se justifica o se corrige.
 - Cada vez que un error me cueste tiempo, se añade aquí como lección nueva y se sube la versión.
 
-**Versión**: 1.4.0 | **Ratificada**: 2026-10-04 | **Última enmienda**: 2026-10-17
+**Versión**: 1.5.0 | **Ratificada**: 2026-10-04 | **Última enmienda**: 2026-11-08

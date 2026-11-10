@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Boceto 2 · Muro de Boxes — Motorsport Manager</title>
+<style>
+  /* ============================================================
+     BOCETO 2 · MURO DE BOXES
+     Mundo: la pantalla de cronaje del muro de pits.
+     Fondo negro de timing, todo número en mono tabular, el
+     idioma del cronaje (deltas con signo, verde = mejora,
+     púrpura = mejor marca, ámbar = aviso) y el acento = tu
+     librea. Seña: cada cifra del club late como una línea de
+     timing, con reloj vivo y delta al comprar.
+     Inter variable auto-hospedada (base64). Nada externo.
+     ============================================================ */
+
+  @font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url(data:font/woff2;base64,__FUENTE_EMBEBIDA__) format('woff2');
+  }
+
+  :root {
+    --accent: #e10600;            /* librea del jugador (dinámica) */
+    --on-accent: #ffffff;
+    --bg: #0b0c0e;                /* negro de timing */
+    --panel: #131418;
+    --panel-2: #0e0f12;
+    --line: #23252c;
+    --text: #e8eaed;
+    --dim: #9ba1ac;
+    --purple: #c77dff;            /* mejor marca (timing) */
+    --purple-line: #8b3fd4;
+    --green: #2bd96f;             /* mejora / ingreso */
+    --amber: #ffc821;             /* aviso / gasto */
+    --red: #ff5147;               /* crítico, reservado */
+    --mono: ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, 'Roboto Mono', monospace;
+    --sans: 'Inter', system-ui, 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scrollbar-color: #2a2d33 var(--bg); }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    caret-color: var(--text);
+  }
+
+  ::selection { background: var(--accent); color: var(--on-accent); }
+
+  :is(button, input, a):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Barra de sesión (cabecera) ---------- */
+
+  .mast {
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    height: 54px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+
+  .brand {
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .brand span { color: var(--accent); }
+
+  .session {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--dim);
+    letter-spacing: 0.02em;
+  }
+
+  .clock {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    padding: 5px 10px;
+    color: var(--text);
+  }
+
+  .mast-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+  .wallet { display: flex; align-items: center; gap: 10px; }
+  .wallet .w-val {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .wallet .w-val small { color: var(--dim); font-weight: 400; font-size: 12px; }
+  .wallet .w-delta {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 3px 7px;
+    border: 1px solid transparent;
+    visibility: hidden;
+  }
+  .wallet .w-delta.show { visibility: visible; }
+  .wallet .w-delta.down { color: var(--amber); border-color: rgba(255, 200, 33, 0.4); }
+  .wallet .w-delta.up { color: var(--green); border-color: rgba(43, 217, 111, 0.4); }
+
+  .btn {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--text);
+    font: 600 12.5px/1 var(--sans);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 9px 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn:hover { border-color: var(--dim); }
+  .btn svg { width: 11px; height: 11px; }
+
+  .more { position: relative; }
+  .more-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    min-width: 210px;
+    padding: 5px;
+    display: none;
+    z-index: 40;
+  }
+  .more.open .more-menu { display: block; }
+  .more-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    color: var(--text);
+    font: 500 13px/1 var(--sans);
+    padding: 10px 10px;
+    cursor: pointer;
+  }
+  .more-menu button:hover { background: var(--panel-2); }
+  .more-menu .danger:hover { color: var(--red); }
+
+  /* ---------- Torre de navegación ---------- */
+
+  .shell {
+    display: grid;
+    grid-template-columns: 196px 1fr;
+    min-height: calc(100vh - 54px);
+  }
+
+  .rail {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    padding: 14px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    position: sticky;
+    top: 54px;
+    height: calc(100vh - 54px);
+  }
+
+  /* La torre: código de 3 letras + nombre, como en la retransmisión */
+  .rail-tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: none;
+    border: 0;
+    border-left: 3px solid transparent;
+    color: var(--dim);
+    font: 600 12.5px/1 var(--sans);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 12px 14px;
+    cursor: pointer;
+    text-align: left;
+  }
+  .rail-tab .code {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+    border: 1px solid var(--line);
+    padding: 2.5px 5px;
+    flex: none;
+  }
+  .rail-tab:hover { color: var(--text); background: var(--panel-2); }
+  .rail-tab.active {
+    color: var(--text);
+    background: var(--panel-2);
+    border-left-color: var(--accent);
+  }
+  .rail-tab.active .code { color: var(--text); border-color: var(--dim); }
+
+  .rail-spacer { flex: 1; }
+
+  .race-btn {
+    margin: 10px 12px 2px;
+    background: var(--accent);
+    color: var(--on-accent);
+    border: 0;
+    font: 800 13px/1.1 var(--sans);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 14px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .race-btn:hover { filter: brightness(1.12); }
+  .race-btn .sub { display: block; font: 500 11px/1.4 var(--mono); text-transform: none; letter-spacing: 0; opacity: 0.9; }
+  .race-btn.go { background: #0d7a3a; }
+  .race-btn svg { width: 12px; height: 12px; flex: none; }
+
+  /* ---------- Zona de datos ---------- */
+
+  .zone {
+    padding: 26px clamp(16px, 3.5vw, 48px) 90px;
+    max-width: 1060px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* Tu línea de torre, a lo grande */
+  .hero {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px 40px;
+    padding: 22px 24px;
+    margin-bottom: 12px;
+  }
+  .hero-main { display: flex; align-items: center; gap: 16px; min-width: 0; }
+  .pos-box {
+    background: var(--accent);
+    color: var(--on-accent);
+    font: 800 26px/1 var(--sans);
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex: none;
+  }
+  .pos-box small { font: 600 10px/1 var(--sans); letter-spacing: 0.12em; }
+  .hero-main h1 {
+    margin: 0;
+    font-size: clamp(24px, 3.4vw, 38px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+  .hero-main .gap-line {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--dim);
+    margin-top: 6px;
+  }
+  .hero-main .gap-line b { color: var(--text); font-weight: 600; }
+  .hero-side { text-align: right; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+  .hero-side .lbl { font: 600 10.5px/1 var(--sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+  .hero-side .big { font-family: var(--mono); font-size: clamp(26px, 3vw, 34px); font-weight: 700; }
+
+  /* Cinta de parrilla: fuerza de los 10 equipos (tamaño = rating) */
+  .grid-strip {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 14px 24px 16px;
+    display: grid;
+    gap: 12px;
+  }
+  .grid-strip .strip-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+    display: flex;
+    justify-content: space-between;
+  }
+  .dots { display: flex; align-items: flex-end; gap: clamp(8px, 2.4vw, 22px); }
+  .dot {
+    border-radius: 50%;
+    background: #3a3e46;
+    flex: none;
+    position: relative;
+  }
+  .dot.you { background: var(--accent); box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--accent); }
+  .dot.you::after {
+    content: 'TÚ';
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font: 700 10px/1 var(--mono);
+    color: var(--text);
+    letter-spacing: 0.1em;
+  }
+
+  /* Cuerpo de la sede: plantilla del muro */
+  .staff {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 14px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 26px 40px;
+    margin-bottom: 40px;
+  }
+  .gauge { display: grid; gap: 6px; min-width: 150px; }
+  .gauge .g-top {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+  }
+  .gauge .g-top b { color: var(--text); font-weight: 600; }
+  .gauge .g-cells { display: flex; gap: 2px; height: 10px; }
+  .gauge .g-cells i { flex: 1; background: #22242b; }
+  .gauge .g-cells i.fill { background: var(--accent); }
+
+  h2 {
+    font: 700 12px/1 var(--sans);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 42px 0 14px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* Identidad: formulario denso del muro */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px 16px;
+  }
+  .form-grid label {
+    display: grid;
+    gap: 6px;
+    font: 600 10.5px/1 var(--sans);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .form-grid input {
+    font: 500 14px/1.3 var(--mono);
+    color: var(--text);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    padding: 9px 10px;
+    border-radius: 0;
+    width: 100%;
+  }
+  .form-grid input:focus-visible { outline: none; border-color: var(--accent); }
+  input[type='color'] { padding: 3px; height: 38px; cursor: pointer; }
+  input[type='color']::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type='color']::-webkit-color-swatch { border: 1px solid var(--line); }
+  input[type='color']::-moz-color-swatch { border: 1px solid var(--line); }
+
+  /* Desarrollo: líneas de timing */
+  .dev-head,
+  .dev-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 230px) 84px 1fr 158px;
+    gap: 16px;
+    align-items: center;
+  }
+  .dev-head {
+    font: 600 10.5px/1 var(--sans);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--dim);
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--line);
+  }
+  .dev-row { padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .dev-row.poor .name { color: var(--dim); }
+  .dev-row .name { font: 600 12.5px/1.3 var(--sans); letter-spacing: 0.05em; text-transform: uppercase; }
+  .dev-row .lvl { font-family: var(--mono); font-size: 15px; }
+  .dev-row .lvl small { color: var(--dim); font-size: 11.5px; }
+
+  .meter { display: flex; gap: 2px; height: 16px; }
+  .meter i { flex: 1; background: #22242b; }
+  .meter i.fill { background: var(--accent); }
+  .meter.maxed i.fill { background: var(--purple-line); }
+
+  .dev-buy {
+    font: 600 13px/1 var(--mono);
+    background: none;
+    color: var(--text);
+    border: 1px solid var(--line);
+    padding: 9px 10px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .dev-buy:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .dev-buy:disabled { color: var(--dim); cursor: not-allowed; }
+  .dev-buy:disabled .cost { text-decoration: line-through; }
+
+  /* MÁX: la mejor marca se lleva el púrpura del cronaje */
+  .best {
+    font: 700 12px/1 var(--mono);
+    letter-spacing: 0.12em;
+    color: var(--purple);
+    border: 1.5px solid var(--purple-line);
+    padding: 7px 12px;
+    display: inline-block;
+  }
+  .cell-action { display: flex; justify-content: flex-end; }
+
+  .notice {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 22px 24px;
+    margin-top: 36px;
+    max-width: 560px;
+  }
+  .notice strong { display: block; font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+  .notice p { margin: 0; color: var(--dim); font-size: 13.5px; }
+
+  .toast {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 13px 16px;
+    max-width: min(340px, calc(100vw - 32px));
+    z-index: 60;
+    display: flex;
+    gap: 10px;
+  }
+  .toast .t-dot { width: 8px; height: 8px; background: var(--accent); margin-top: 5px; flex: none; }
+  .toast .t-title { font-weight: 700; font-size: 13.5px; }
+  .toast .t-body { color: var(--dim); font-size: 12.5px; margin-top: 2px; }
+
+  footer {
+    padding: 24px 0 100px;
+    font: 500 11px/1.6 var(--mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  /* ---------- Móvil ---------- */
+
+  .tabs-row, .race-bar { display: none; }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; }
+    .rail { display: none; }
+    .session { display: none; }
+
+    .tabs-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 8px 10px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 54px;
+      z-index: 25;
+      scrollbar-width: none;
+    }
+    .tabs-row::-webkit-scrollbar { display: none; }
+    .tabs-row button {
+      flex: none;
+      font: 600 12px/1 var(--sans);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: none;
+      color: var(--dim);
+      border: 1px solid var(--line);
+      padding: 9px 11px;
+    }
+    .tabs-row button.active { color: var(--text); border-color: var(--accent); }
+
+    .race-bar {
+      display: block;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: var(--panel);
+      border-top: 1px solid var(--line);
+      padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+      z-index: 30;
+    }
+    .race-bar .race-btn { width: 100%; margin: 0; }
+
+    .zone { padding-top: 18px; }
+    .hero { grid-template-columns: 1fr; padding: 16px; }
+    .hero-side { text-align: left; }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .dev-head { display: none; }
+    .dev-row { grid-template-columns: 1fr auto; grid-template-areas: 'name lvl' 'meter meter' 'action action'; row-gap: 10px; }
+    .dev-row .name { grid-area: name; }
+    .dev-row .lvl { grid-area: lvl; text-align: right; }
+    .dev-row .meter { grid-area: meter; }
+    .dev-row .cell-action { grid-area: action; }
+    .dev-buy { width: 100%; }
+    .toast { bottom: 96px; right: 10px; }
+    footer { padding-bottom: 120px; }
+  }
+
+  /* Movimiento: la pantalla late (y se queda quieta si se pide calma) */
+  @media (prefers-reduced-motion: no-preference) {
+    .toast { animation: toast-in 120ms ease-out; }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
+    .w-delta.show { animation: delta-in 120ms ease-out; }
+    @keyframes delta-in { from { opacity: 0; } }
+    .rail-tab { transition: background-color 100ms ease-out, color 100ms ease-out; }
+  }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="brand">Motorsport<span> Manager</span></div>
+  <div class="session">T2 · R9/21 · GP MONTREAL · 70 V</div>
+  <div class="mast-right">
+    <div class="clock" id="clock" title="Reloj de sesión" aria-live="off">27:14</div>
+    <div class="wallet" title="Presupuesto del equipo">
+      <span class="w-val"><span id="budget-top">52,0</span> <small>M€</small></span>
+      <span class="w-delta" id="w-delta" aria-live="polite"></span>
+    </div>
+    <div class="more" id="more">
+      <button type="button" class="btn" id="more-btn" aria-haspopup="true" aria-expanded="false">
+        Más
+        <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>
+      </button>
+      <div class="more-menu" role="menu">
+        <button type="button" role="menuitem" data-toast="Palmarés|Historial de temporadas cerradas: fuera de este boceto.">Palmarés</button>
+        <button type="button" role="menuitem" data-toast="Partidas|Las 3 partidas guardadas: fuera de este boceto.">Partidas</button>
+        <button type="button" role="menuitem" id="reset-btn" class="danger">Reiniciar demo</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="rail" aria-label="Secciones del equipo">
+    <button type="button" class="rail-tab active" data-tab="team" aria-current="page"><span class="code">EQP</span>Mi Equipo</button>
+    <button type="button" class="rail-tab" data-tab="pilots"><span class="code">PIL</span>Pilotos</button>
+    <button type="button" class="rail-tab" data-tab="hq"><span class="code">SDE</span>Sede</button>
+    <button type="button" class="rail-tab" data-tab="rivals"><span class="code">RIV</span>Rivales</button>
+    <button type="button" class="rail-tab" data-tab="sponsors"><span class="code">PAT</span>Patrocinadores</button>
+    <button type="button" class="rail-tab" data-tab="champ"><span class="code">CAM</span>Campeonato</button>
+    <div class="rail-spacer"></div>
+    <button type="button" class="race-btn" id="race-btn">
+      <span>Carrera<span class="sub">R9 · Montreal · salida 15:00</span></span>
+      <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5l5 4.5-5 4.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    </button>
+  </nav>
+
+  <main class="zone">
+    <div id="panel-team">
+      <section class="hero" aria-label="Tu línea en la torre">
+        <div class="hero-main">
+          <div class="pos-box"><span>P4</span><small>CONS</small></div>
+          <div>
+            <h1>Escudería Vega</h1>
+            <p class="gap-line">A P3 <b>−38 pts</b> · A P5 <b>+12 pts</b> · mejor resultado <b>P2</b> (R6)</p>
+          </div>
+        </div>
+        <div class="hero-side">
+          <span class="lbl">Presupuesto</span>
+          <span class="big" id="budget-hero">52,0 M€</span>
+        </div>
+      </section>
+
+      <section class="grid-strip" aria-label="Fuerza de la parrilla">
+        <div class="strip-title"><span>PARRILLA · FUERZA (RATING)</span><span>P1 → P10</span></div>
+        <div class="dots" id="dots"></div>
+      </section>
+
+      <section class="staff" aria-label="Plantilla de la sede">
+        <div class="gauge">
+          <div class="g-top"><span>MECÁNICOS</span><b>4/10 · −4,5 s boxes</b></div>
+          <div class="g-cells"><i class="fill"></i><i class="fill"></i><i class="fill"></i><i class="fill"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="gauge">
+          <div class="g-top"><span>INGENIEROS</span><b>3/10 · −10 % coste</b></div>
+          <div class="g-cells"><i class="fill"></i><i class="fill"></i><i class="fill"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="gauge">
+          <div class="g-top"><span>COMERCIALES</span><b>2/10 · +5 % patrocinio</b></div>
+          <div class="g-cells"><i class="fill"></i><i class="fill"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+      </section>
+
+      <h2>Identidad</h2>
+      <div class="form-grid">
+        <label>Nombre del equipo
+          <input type="text" maxlength="24" value="Escudería Vega" />
+        </label>
+        <label>Color de librea
+          <input type="color" id="livery" value="#e10600" />
+        </label>
+        <label>Piloto 1 · dorsal
+          <input type="text" value="E. Marchetti · 27" />
+        </label>
+        <label>Piloto 2 · dorsal
+          <input type="text" value="K. Vidal · 71" />
+        </label>
+        <label>Temporada
+          <input type="text" value="T2 · R9/21" readonly />
+        </label>
+        <label>Próximo acto
+          <input type="text" value="Carrera · Montreal" readonly />
+        </label>
+      </div>
+
+      <h2>Desarrollo del coche · tus 2 coches a la vez</h2>
+      <div class="dev-head" aria-hidden="true">
+        <span>Categoría</span><span>Nivel</span><span>Progreso</span><span style="text-align:right;">Acción</span>
+      </div>
+      <div id="dev-list"></div>
+    </div>
+
+    <div id="panel-other" hidden>
+      <section class="notice">
+        <strong id="other-title">Pilotos</strong>
+        <p>Este boceto diseña solo la página principal. Si eliges la dirección «Muro de Boxes», esta pestaña hablará el mismo idioma: mono, deltas y colores de sector.</p>
+      </section>
+    </div>
+
+    <footer>Boceto 2 · Dirección «Muro de Boxes» · Demo estática, sin conexión con el motor del juego</footer>
+  </main>
+</div>
+
+<div class="tabs-row" aria-label="Secciones del equipo">
+  <button type="button" class="active" data-tab="team" aria-current="page">Mi Equipo</button>
+  <button type="button" data-tab="pilots">Pilotos</button>
+  <button type="button" data-tab="hq">Sede</button>
+  <button type="button" data-tab="rivals">Rivales</button>
+  <button type="button" data-tab="sponsors">Patrocinadores</button>
+  <button type="button" data-tab="champ">Campeonato</button>
+</div>
+<div class="race-bar">
+  <button type="button" class="race-btn" id="race-btn-m">
+    <span>Carrera · R9 Montreal<span class="sub">GP de Montreal · salida 15:00</span></span>
+    <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5l5 4.5-5 4.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+  </button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var MAX = 15;
+  var state = {
+    budget: 52,
+    devs: [
+      { id: 'aero', label: 'Aerodinámica', level: 15 },
+      { id: 'alerones', label: 'Alerones del. y tras.', level: 8 },
+      { id: 'motor', label: 'Motor', level: 12 },
+      { id: 'electronica', label: 'Electrónica', level: 6 },
+      { id: 'chasis', label: 'Chasis', level: 9 },
+      { id: 'suspension', label: 'Suspensión', level: 7 },
+      { id: 'neumaticos', label: 'Neumáticos', level: 10 },
+      { id: 'seguridad', label: 'Seguridad', level: 4 },
+      { id: 'volante', label: 'Volante', level: 5 }
+    ]
+  };
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var INITIAL = JSON.parse(JSON.stringify(state));
+
+  function cost(level) { return Math.ceil((15 + 4 * level) * 0.9); }
+  function fmt(n) { return String(Math.round(n * 10) / 10).replace('.', ','); }
+
+  var list = document.getElementById('dev-list');
+
+  function meterHTML(level, maxed) {
+    var cells = '';
+    for (var i = 0; i < MAX; i++) cells += '<i class="' + (i < level ? 'fill' : '') + '"></i>';
+    return '<div class="meter' + (maxed ? ' maxed' : '') + '" role="img" aria-label="Nivel ' + level + ' de ' + MAX + '">' + cells + '</div>';
+  }
+
+  function rowHTML(dev) {
+    var maxed = dev.level >= MAX;
+    var c = cost(dev.level);
+    var afford = state.budget >= c;
+    return ''
+      + '<div class="dev-row' + (afford || maxed ? '' : ' poor') + '" data-id="' + dev.id + '">'
+      + '<span class="name">' + dev.label + '</span>'
+      + '<span class="lvl">L' + dev.level + '<small>/' + MAX + '</small></span>'
+      + meterHTML(dev.level, maxed)
+      + '<span class="cell-action">'
+      + (maxed
+        ? '<span class="best">MÁX</span>'
+        : '<button type="button" class="dev-buy"' + (afford ? '' : ' disabled') + '>'
+          + '+1 · <span class="cost">' + c + '</span> M€</button>')
+      + '</span></div>';
+  }
+
+  function renderDevs() { list.innerHTML = state.devs.map(rowHTML).join(''); }
+
+  function renderBudget(delta) {
+    var v = fmt(state.budget);
+    document.getElementById('budget-top').textContent = v;
+    document.getElementById('budget-hero').textContent = v + ' M€';
+    if (delta !== undefined) {
+      var d = document.getElementById('w-delta');
+      d.textContent = (delta < 0 ? '−' : '+') + fmt(Math.abs(delta));
+      d.className = 'w-delta show ' + (delta < 0 ? 'down' : 'up');
+      clearTimeout(d._t);
+      d._t = setTimeout(function () { d.className = 'w-delta'; }, 1500);
+    }
+  }
+
+  list.addEventListener('click', function (e) {
+    var btn = e.target.closest('.dev-buy');
+    if (!btn || btn.disabled) return;
+    var row = btn.closest('.dev-row');
+    var dev = state.devs.find(function (d) { return d.id === row.dataset.id; });
+    var c = cost(dev.level);
+    if (dev.level >= MAX || state.budget < c) return;
+    state.budget -= c;
+    dev.level += 1;
+    renderDevs();
+    renderBudget(-c);
+  });
+
+  // Cinta de fuerza: 10 equipos, tamaño = rating; el tuyo, en librea.
+  (function () {
+    var ratings = [91, 88, 86, 84, 80, 78, 76, 74, 71, 68]; // P1→P10
+    var dots = document.getElementById('dots');
+    ratings.forEach(function (r, i) {
+      var size = 10 + Math.round((r - 66) * 0.62); // 68→13 px … 91→27 px
+      var el = document.createElement('span');
+      el.className = 'dot' + (i === 3 ? ' you' : '');
+      el.style.width = size + 'px';
+      el.style.height = size + 'px';
+      el.title = 'P' + (i + 1) + ' · rating ' + r;
+      dots.appendChild(el);
+    });
+  })();
+
+  // La librea manda (spec 19 real): acento + tinta/blanco por luminancia.
+  function luminance(hex) {
+    var n = [1, 3, 5].map(function (i) {
+      var x = parseInt(hex.substr(i, 2), 16) / 255;
+      return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * n[0] + 0.7152 * n[1] + 0.0722 * n[2];
+  }
+  document.getElementById('livery').addEventListener('input', function (e) {
+    var root = document.documentElement.style;
+    root.setProperty('--accent', e.target.value);
+    root.setProperty('--on-accent', luminance(e.target.value) > 0.35 ? '#0b0c0e' : '#ffffff');
+  });
+
+  // Reloj de sesión: late si el dispositivo deja, quieto si no.
+  (function () {
+    var el = document.getElementById('clock');
+    var t = 27 * 60 + 14;
+    function paint() {
+      var m = Math.floor(t / 60), s = t % 60;
+      el.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }
+    if (reduce) { el.textContent = '27:14'; return; }
+    setInterval(function () { t += 1; paint(); }, 1000);
+  })();
+
+  // Pestañas: solo «Mi Equipo» está diseñada en este boceto.
+  var titles = { pilots: 'Pilotos', hq: 'Sede', rivals: 'Rivales', sponsors: 'Patrocinadores', champ: 'Campeonato' };
+  function setTab(id) {
+    document.querySelectorAll('[data-tab]').forEach(function (b) {
+      var on = b.dataset.tab === id;
+      b.classList.toggle('active', on);
+      if (b.hasAttribute('aria-current') || on) b.setAttribute('aria-current', on ? 'page' : 'false');
+    });
+    document.getElementById('panel-team').hidden = id !== 'team';
+    document.getElementById('panel-other').hidden = id === 'team';
+    if (id !== 'team') document.getElementById('other-title').textContent = titles[id];
+    window.scrollTo({ top: 0 });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-tab]');
+    if (b) setTab(b.dataset.tab);
+  });
+
+  // Menú Más + avisos
+  var more = document.getElementById('more');
+  var moreBtn = document.getElementById('more-btn');
+  moreBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    more.classList.toggle('open');
+    moreBtn.setAttribute('aria-expanded', more.classList.contains('open'));
+  });
+  document.addEventListener('click', function (e) {
+    if (!more.contains(e.target)) {
+      more.classList.remove('open');
+      moreBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+  more.addEventListener('click', function (e) {
+    var item = e.target.closest('[data-toast]');
+    if (!item) return;
+    var parts = item.dataset.toast.split('|');
+    toast(parts[0], parts[1]);
+    more.classList.remove('open');
+  });
+  document.getElementById('reset-btn').addEventListener('click', function () {
+    state = JSON.parse(JSON.stringify(INITIAL));
+    renderDevs();
+    renderBudget();
+    more.classList.remove('open');
+    toast('Demo reiniciada', 'Presupuesto y desarrollos vuelven a su estado inicial.');
+  });
+
+  var toastRoot = null;
+  function toast(title, body) {
+    if (toastRoot) toastRoot.remove();
+    toastRoot = document.createElement('div');
+    toastRoot.className = 'toast';
+    toastRoot.setAttribute('role', 'status');
+    toastRoot.innerHTML = '<span class="t-dot"></span><div><div class="t-title"></div><div class="t-body"></div></div>';
+    toastRoot.querySelector('.t-title').textContent = title;
+    toastRoot.querySelector('.t-body').textContent = body;
+    document.body.appendChild(toastRoot);
+    clearTimeout(toastRoot._t);
+    toastRoot._t = setTimeout(function () { toastRoot.remove(); }, 2800);
+  }
+
+  // Salida: la línea del muro se pone verde.
+  function raceSequence(btn) {
+    if (btn._running) return;
+    btn._running = true;
+    var label = btn.querySelector('span');
+    var old = label.childNodes[0].textContent;
+    if (reduce) {
+      toast('Luces fuera', 'En el juego real arranca aquí la R9 de Montreal (70 vueltas).');
+      btn._running = false;
+      return;
+    }
+    label.childNodes[0].textContent = 'En parrilla ···· ';
+    setTimeout(function () {
+      btn.classList.add('go');
+      label.childNodes[0].textContent = 'Luces fuera ';
+      setTimeout(function () {
+        btn.classList.remove('go');
+        label.childNodes[0].textContent = old;
+        toast('Luces fuera', 'En el juego real arranca aquí la R9 de Montreal (70 vueltas).');
+        btn._running = false;
+      }, 1000);
+    }, 1100);
+  }
+  document.getElementById('race-btn').addEventListener('click', function () { raceSequence(this); });
+  document.getElementById('race-btn-m').addEventListener('click', function () { raceSequence(this); });
+
+  renderDevs();
+  renderBudget();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-10T00:00:00Z",
+  "title": "Design System: Motorsport Manager — Hub «Carbono»",
+  "extensions": {
+    "colorMeta": {
+      "carbon-ground": { "role": "neutral", "displayName": "Carbono mate", "canonical": "#0E0F11", "tonalRamp": ["#060708", "#0E0F11", "#141519", "#1C1E23", "#26292F", "#3A3E46", "#5F646D", "#9BA0AA"] },
+      "carbon-panel": { "role": "neutral", "displayName": "Panel enmarcado", "canonical": "#141519", "tonalRamp": ["#0A0B0D", "#101216", "#141519", "#1A1C21", "#22252B", "#2E323A", "#4A4F59", "#767C88"] },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "#262932", "tonalRamp": ["#121419", "#1A1D23", "#22252D", "#262932", "#3A3F4C", "#5A616F", "#8A92A1", "#C0C6D2"] },
+      "hairline-soft": { "role": "neutral", "displayName": "Hairline suave (separador de filas)", "canonical": "#1C1E23", "tonalRamp": ["#0C0D10", "#121317", "#17191E", "#1C1E23", "#2A2D35", "#3E434E", "#646B79", "#9AA1AF"] },
+      "ink": { "role": "neutral", "displayName": "Tinta (texto y datos)", "canonical": "#F2F3F5", "tonalRamp": ["#101114", "#2A2C31", "#454850", "#6C7078", "#9BA0AA", "#C6C9CF", "#F2F3F5", "#FFFFFF"] },
+      "ink-dim": { "role": "neutral", "displayName": "Tinta atenuada (labels, pestañas inactivas)", "canonical": "#9BA0AA", "tonalRamp": ["#232528", "#3C3F45", "#5A5E66", "#787D87", "#9BA0AA", "#B8BCC4", "#D6D9DE", "#F2F3F5"] },
+      "volt": { "role": "primary", "displayName": "Volt (acción y activo)", "canonical": "#D6FF3F", "tonalRamp": ["#2A340A", "#414F10", "#5A6D16", "#7D9000", "#9CB41E", "#BCD92C", "#D6FF3F", "#E9FF8F"] },
+      "volt-ink": { "role": "primary", "displayName": "Tinta sobre volt", "canonical": "#101114", "tonalRamp": ["#0B0C0E", "#101114", "#1C1E23", "#2C2F36", "#4A4E58", "#6E7480", "#9BA0AA", "#C6C9CF"] },
+      "paper-ground": { "role": "neutral", "displayName": "Suelo papel (tema claro)", "canonical": "#EDEFE9", "tonalRamp": ["#16181C", "#5B6068", "#8A8F86", "#B9BFAE", "#DDE0D5", "#E5E7E0", "#EDEFE9", "#F7F8F4"] },
+      "paper-line": { "role": "neutral", "displayName": "Línea papel (tema claro)", "canonical": "#B9BFAE", "tonalRamp": ["#3A3F36", "#5B6152", "#7E846F", "#9CA289", "#B9BFAE", "#CFCFBF", "#E2E4D8", "#F2F3EA"] },
+      "paper-ink": { "role": "neutral", "displayName": "Tinta papel (texto en claro)", "canonical": "#16181C", "tonalRamp": ["#101114", "#16181C", "#2C2F35", "#454A52", "#5B6068", "#8A8F97", "#C3C7CC", "#EDEFE9"] },
+      "paper-volt": { "role": "primary", "displayName": "Volt de fondo en claro", "canonical": "#CDF630", "tonalRamp": ["#283308", "#3E4D0E", "#566815", "#74881C", "#96B023", "#B4D229", "#CDF630", "#E4FA86"] },
+      "volt-deep-line": { "role": "primary", "displayName": "Volt oscurecido (líneas y foco en claro)", "canonical": "#7D9000", "tonalRamp": ["#232B03", "#394406", "#4F5C09", "#7D9000", "#9CAE22", "#BCCB4E", "#D8E283", "#EDF2BC"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display — nombre de la escudería", "purpose": "Inter Black 900, mayúsculas, directamente sobre la rejilla; dueño del tablón." },
+      "title": { "displayName": "Title — títulos de sección", "purpose": "Inter 800 13px, tracking 0.16em, mayúsculas, con hairline inferior." },
+      "label": { "displayName": "Label — claves, campos, botones", "purpose": "Inter 600 11–12px, tracking 0.1–0.14em, mayúsculas, atenuado." },
+      "body": { "displayName": "Body — nombres de fila e ítems", "purpose": "Inter 600 13–14px, texto corriente del hub." },
+      "data": { "displayName": "Cifra — todo número del juego", "purpose": "Mono tabular; monedero, niveles, costes, deltas, rondas. Inter nunca porta cifras." }
+    },
+    "shadows": [
+      { "name": "menu-drop", "value": "4px 6px 18px rgba(0, 0, 0, 0.35)", "purpose": "Única sombra del mundo: superficies desplegables que flotan sobre la rejilla (menú Más)." }
+    ],
+    "motion": [
+      { "name": "hub-draw", "value": "hub-draw 140ms steps(3, end) — scaleX(0.02)→1, opacity 0.3→1, transform-origin left", "purpose": "La regla graduada y la ficha se traza a pasos al entrar. Gateada tras prefers-reduced-motion: no-preference; con la preferencia activa el mundo aparece quieto." },
+      { "name": "delta-chip", "value": "visibility visible durante 1600 ms tras cada gasto/ingreso", "purpose": "Chip delta junto al monedero (aria-live=polite), sin color: el delta es un dato." }
+    ],
+    "breakpoints": [
+      { "name": "hub-mobile", "value": "860px", "purpose": "Riel→tira horizontal con activo volt en bloque, barra inferior solo-carrera con env(safe-area-inset-bottom), marca corta MM, targets ≥44px." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón fantasma",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Control secundario: hairline 1px, tinta, mayúsculas; mínimo 44px. El coste en mono sin mayúsculas cuando porta una cifra.",
+      "html": "<button class=\"ds-btn-ghost\">AERODINÁMICA · 31 M€</button>",
+      "css": ".ds-btn-ghost { background: transparent; border: 1px solid #262932; color: #F2F3F5; border-radius: 0; font: 600 12px/1 Inter, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; min-height: 44px; padding: 9px 10px; } .ds-btn-ghost:hover:not(:disabled) { border-color: #9BA0AA; } .ds-btn-ghost:focus-visible { outline: 2px solid #D6FF3F; outline-offset: 2px; } .ds-btn-ghost:disabled { color: #9BA0AA; }"
+    },
+    {
+      "name": "Lámina volt (primario)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "El único bloque de acción: fondo volt, tinta oscura, Inter 800. Su rareza es el punto.",
+      "html": "<button class=\"ds-btn-volt\">ENTRENAR</button>",
+      "css": ".ds-btn-volt { background: #D6FF3F; border: 1px solid #D6FF3F; color: #101114; border-radius: 0; font: 800 12px/1 Inter, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; min-height: 44px; padding: 9px 14px; } .ds-btn-volt:hover:not(:disabled) { filter: brightness(1.06); } .ds-btn-volt:focus-visible { outline: 2px solid #D6FF3F; outline-offset: 2px; }"
+    },
+    {
+      "name": "Botón de carrera (dos capas)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Firma del hub: el acto en Inter 800, la referencia de ronda en mono debajo, dentro de la lámina volt.",
+      "html": "<button class=\"ds-btn-race\"><span class=\"ds-go-act\">CLASIFICACIÓN</span><span class=\"ds-go-sub\">R9/21 · MONTREAL</span></button>",
+      "css": ".ds-btn-race { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; line-height: 1.15; background: #D6FF3F; border: 1px solid #D6FF3F; color: #101114; border-radius: 0; padding: 13px 14px; text-align: left; } .ds-btn-race .ds-go-act { font: 800 13px/1.15 Inter, system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; } .ds-btn-race .ds-go-sub { font: 400 11px/1.15 ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace; letter-spacing: 0.04em; } .ds-btn-race:hover { filter: brightness(1.06); } .ds-btn-race:focus-visible { outline: 2px solid #D6FF3F; outline-offset: 2px; }"
+    },
+    {
+      "name": "Pestaña del riel",
+      "kind": "nav",
+      "refersTo": "nav-tab",
+      "description": "Texto en atenuado con borde izquierdo de 2px; la activa marca en volt-línea: es un control, no un dato.",
+      "html": "<nav><button class=\"ds-nav-tab ds-active\">MI EQUIPO</button><button class=\"ds-nav-tab\">PILOTOS</button></nav>",
+      "css": ".ds-nav-tab { display: block; background: none; border: 0; border-left: 2px solid transparent; border-radius: 0; color: #9BA0AA; font: 600 12px/1 Inter, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; padding: 13px 18px; min-height: 44px; text-align: left; } .ds-nav-tab:hover { border-left-color: #262932; color: #F2F3F5; } .ds-nav-tab.ds-active { border-left-color: #D6FF3F; color: #F2F3F5; } .ds-nav-tab:focus-visible { outline: 2px solid #D6FF3F; outline-offset: 2px; }"
+    },
+    {
+      "name": "Monedero + chip delta",
+      "kind": "chip",
+      "refersTo": "chip-budget",
+      "description": "La cifra del equipo en mono tabular; cada gasto deja un chip delta visible 1600 ms. Sin color: son datos.",
+      "html": "<span class=\"ds-chip-budget\"><b class=\"ds-budget-value\">52</b> M€ <span class=\"ds-delta\">−31</span></span>",
+      "css": ".ds-chip-budget { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #262932; padding: 5px 10px; font: 400 15px/1 ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace; color: #F2F3F5; font-variant-numeric: tabular-nums; } .ds-budget-value { font-weight: 700; } .ds-delta { font-size: 12px; border: 1px solid #262932; padding: 1px 6px; color: #F2F3F5; }"
+    },
+    {
+      "name": "Medidor de 15 ticks",
+      "kind": "custom",
+      "refersTo": "meter-ticks",
+      "description": "El nivel como dato: ticks de tinta, jamás volt. Comprar añade un tick: la interacción firma.",
+      "html": "<span class=\"ds-ticks\"><i class=\"fill\"></i><i class=\"fill\"></i><i class=\"fill\"></i><i class=\"fill\"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>",
+      "css": ".ds-ticks { display: flex; gap: 3px; height: 16px; } .ds-ticks i { width: 3px; background: #262932; } .ds-ticks i.fill { background: #F2F3F5; }"
+    },
+    {
+      "name": "Caja grabada MÁX",
+      "kind": "custom",
+      "refersTo": "mark-max",
+      "description": "Tope alcanzado: borde de tinta, mono 700, sin color de acción. Unificada en Desarrollo, Pilotos y Sede.",
+      "html": "<span class=\"ds-mark-max\">MÁX</span>",
+      "css": ".ds-mark-max { display: inline-block; font: 700 12.5px/1 ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace; letter-spacing: 0.14em; color: #F2F3F5; border: 1.5px solid #F2F3F5; padding: 6px 12px; }"
+    },
+    {
+      "name": "Ficha de plano (bloque de título)",
+      "kind": "card",
+      "refersTo": "panel-module",
+      "description": "La ficha del equipo: panel sobre marco 1px, clave label atenuada / valor mono a la derecha; la librea es un chip-dato.",
+      "html": "<div class=\"ds-titleblock\"><div><span class=\"ds-k\">PRESUPUESTO</span></div><div class=\"ds-v\"><b>52 M€</b></div><div><span class=\"ds-k\"><span class=\"ds-livery\" style=\"background:#e10600\"></span>LIVERY</span></div><div class=\"ds-v\">#E10600</div></div>",
+      "css": ".ds-titleblock { border: 1px solid #262932; background: #141519; display: grid; grid-template-columns: auto 1fr; max-width: 560px; } .ds-titleblock > div { padding: 10px 16px; border-top: 1px solid #1C1E23; font: 400 13px/1.4 ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace; color: #F2F3F5; } .ds-titleblock > div:nth-child(-n+2) { border-top: 0; } .ds-titleblock .ds-k { color: #9BA0AA; font: 600 11px/1 Inter, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; } .ds-titleblock .ds-v { text-align: right; } .ds-titleblock .ds-v b { font-weight: 600; } .ds-livery { display: inline-block; width: 11px; height: 11px; border: 1px solid #262932; margin-right: 7px; vertical-align: -1px; }"
+    },
+    {
+      "name": "Input subrayado",
+      "kind": "input",
+      "refersTo": "input-underline",
+      "description": "Formulario desnudo: sin caja, solo subrayado hairline; el foco es el subrayado vivo en volt-línea.",
+      "html": "<label class=\"ds-field\">NOMBRE DEL EQUIPO<input class=\"ds-input\" value=\"ESCUDERÍA VEGA\" /></label>",
+      "css": ".ds-field { display: grid; gap: 7px; font: 600 11px/1 Inter, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: #9BA0AA; } .ds-input { background: transparent; border: 0; border-bottom: 1px solid #262932; border-radius: 0; color: #F2F3F5; font: 400 14px/1 ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace; min-height: 40px; padding: 8px 2px; } .ds-input:focus-visible { outline: none; border-bottom: 2px solid #D6FF3F; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La mesa de ingeniería de una escudería de noche",
+    "overview": "El hub de gestión («Mi Equipo») es el plano de trabajo de una fábrica de precisión: carbono mate sobre el que la rejilla de construcción (hairline de 16/80 px) nunca deja de verse, los datos siempre en blanco y monoespaciada tabular como en un plano técnico, y UN solo color de acción — el volt — que significa exactamente «aquí puedes actuar». La dirección rechaza expresamente el dashboard genérico oscuro+neón y las tarjetas iguales: la identidad es la rejilla y el bloque de título de plano técnico, no el adorno. La voz tipográfica viene de los pesos extremos de Inter (Black display, 600 labels) enfrentada a la cifra mono, no de cambiar de fuente. El volt es fijo: nunca se liga a la librea del jugador (la librea es un dato más, con su chip de color en la ficha) y nunca pinta datos, decoración ni estados informativos. Comprar deja huella: cada gasto muestra un chip delta junto al monedero durante 1600 ms. El movimiento existe solo a pasos (steps 90–140 ms) y todo él queda quieto con prefers-reduced-motion. Frontera: el mundo Carbono vive en src/team-screen.css (tokens --hub-*) y cubre solo el hub y su shell; login, slots, carrera, temporada y palmarés conservan src/ui.css y heredarán Carbono en fases posteriores.",
+    "keyCharacteristics": [
+      "Carbono mate (#0E0F11) con rejilla hairline 16/80 px visible en todo el shell; variante «papel» (#EDEFE9) en tema claro.",
+      "Datos SIEMPRE en blanco/tinta y monoespaciada tabular; la librea es un dato (chip), nunca vestuario.",
+      "Volt #D6FF3F reservado exclusivamente a acción/activo/foco; la única lámina volt del escritorio es la salida a carrera.",
+      "Módulos enmarcados a 1 px sobre la rejilla, esquinas rectas (radius 0), sin sombras salvo el menú desplegable.",
+      "Interacción firma: comprar = chip delta en el monedero (1600 ms) + un tick más; móvil ≤860 px con barra inferior solo-carrera y safe-area."
+    ],
+    "rules": [
+      { "name": "La Ley del Volt", "body": "El volt pinta únicamente acción, activo y foco. Jamás pinta datos, estados informativos ni decoración; jamás se liga a la librea. Si un elemento volt no responde al pulso, no es volt. La única lámina volt de gran tamaño del escritorio es el botón de salida a carrera: su rareza es el punto.", "section": "colors" },
+      { "name": "El Dato es Tinta", "body": "Toda cifra, nivel y medición va en tinta (#F2F3F5) sobre mono tabular. Los medidores son ticks de tinta; la fila del jugador en Campeonato se enfatiza con materia (--hub-line-soft), no con acción.", "section": "colors" },
+      { "name": "La Cifra es Mono", "body": "Si es un número que el jugador compara o gasta, va en la pila mono con font-variant-numeric: tabular-nums. Inter nunca porta cifras del juego.", "section": "typography" },
+      { "name": "The Grid Stays On Rule", "body": "La rejilla de construcción se ve en TODO el shell del hub, bajo cualquier tema. Ninguna superficie del mundo Carbono puede taparla con un fondo opaco salvo el mástil, la barra móvil y los menús desplegables (que flotan sobre él).", "section": "layout" },
+      { "name": "La Mesa Plana", "body": "Nada se levanta del plano con sombra para pedir atención; la atención la da el volt. Si un elemento parece necesitar elevación, es que no debería competir con la acción.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do mantener la rejilla 16/80 px visible en todo el shell; los módulos se enmarcan a 1 px SOBRE ella, no la tapan.",
+      "Do pintar toda cifra, nivel y referencia de ronda en mono tabular (tabular-nums), en tinta.",
+      "Do dejar chip delta de 1600 ms en el monedero tras cada gasto o ingreso.",
+      "Do usar los pesos extremos de Inter (900 display, 800 títulos, 600 labels) como voz; la fuente no cambia para expresar.",
+      "Do mantener objetivos táctiles ≥44 px y, en móvil, la acción de carrera en barra inferior fija con env(safe-area-inset-bottom).",
+      "Do gatear todo movimiento tras prefers-reduced-motion: no-preference y hacerlo a pasos (90–140 ms), nunca como deslizamiento.",
+      "Do en tema claro, oscurecer el volt de líneas y foco (#7D9000) manteniendo el volt de fondo como luz (#CDF630)."
+    ],
+    "donts": [
+      "Don't uses volt para datos, estados informativos, decoración o acentos ligados a la librea del jugador (La Ley del Volt).",
+      "Don't redondees esquinas: border-radius: 0 en todo el mundo (única excepción: el punto-librea de rivales, que es un dato).",
+      "Don't añadas sombras para jerarquía; la única del mundo es la caída del menú desplegable.",
+      "Don't pintes cifras del juego en Inter ni fills de medidor en volt; los ticks llenos son tinta.",
+      "Don't documentes ni estiles desde aquí las pantallas aún no migradas (login, slots, carrera, temporada, palmarés): siguen en src/ui.css y heredarán Carbono en fases posteriores."
+    ]
+  }
+}

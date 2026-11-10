@@ -75,7 +75,8 @@ const STAFF_INFO: Record<StaffKey, { label: string; effect: (level: number) => s
 export function createTeamScreen(
   container: HTMLElement,
   onGoRace: () => void,
-  onGoSlots?: () => void
+  onGoSlots?: () => void,
+  onGoPalmares?: () => void
 ): void {
   container.innerHTML = '';
   // Spec 016: a save CREATED here adopts the difficulty chosen on the
@@ -104,12 +105,17 @@ export function createTeamScreen(
   // reach, destructive/rare actions grouped away from them.
   root.innerHTML = `
     <header class="team-header">
+      <div class="brand"><span class="brand-full">Motorsport Manager</span><span class="brand-mini">MM</span></div>
       <div class="header-right">
-        <div class="budget-chip"><span class="budget-value"></span> M</div>
+        <div class="budget-chip" title="Presupuesto del equipo">
+          <span class="budget-value"></span> M€
+          <span class="budget-delta" id="budget-delta" aria-live="polite"></span>
+        </div>
         <button type="button" class="btn theme-btn"></button>
         <div class="more-wrap">
-          <button type="button" class="btn more-btn" title="Partidas, instalar, reiniciar o salir">Más ▾</button>
+          <button type="button" class="btn more-btn" title="Partidas, instalar, reiniciar o salir">Más</button>
           <div class="more-menu hidden">
+            <button type="button" class="btn more-item palmares-btn" title="Tu historial de temporadas cerradas: puestos, campeonatos, victorias y podios">Palmarés</button>
             <button type="button" class="btn more-item slots-btn" title="Las 3 partidas guardadas: crear, cambiar o borrar">Partidas</button>
             <button type="button" class="btn more-item install-btn hidden">Instalar app</button>
             <button type="button" class="btn more-item reset-season-btn" title="Empezar de cero: reinicia dinero, patrocinador, desarrollos, sede y temporada">Reiniciar</button>
@@ -119,17 +125,17 @@ export function createTeamScreen(
       </div>
     </header>
     <div class="team-body">
-      <nav class="nav-tabs">
+      <nav class="nav-tabs" aria-label="Secciones del equipo">
         <button type="button" class="btn nav-btn active" data-tab="team">Mi Equipo</button>
         <button type="button" class="btn nav-btn" data-tab="pilots">Pilotos</button>
         <button type="button" class="btn nav-btn" data-tab="hq">Sede</button>
         <button type="button" class="btn nav-btn" data-tab="rivals">Rivales</button>
         <button type="button" class="btn nav-btn" data-tab="sponsors">Patrocinadores</button>
         <button type="button" class="btn nav-btn" data-tab="champ">Campeonato</button>
-        <button type="button" class="btn primary go-race-btn"></button>
+        <button type="button" class="btn primary go-race-btn nav-race-btn"></button>
       </nav>
       <main class="team-main">
-        <section class="card cut tab-panel"></section>
+        <section class="tab-panel"></section>
       </main>
     </div>
     <div class="race-bar">
@@ -150,6 +156,10 @@ export function createTeamScreen(
   const slotsBtn = root.querySelector<HTMLButtonElement>('.slots-btn')!;
   if (onGoSlots) slotsBtn.addEventListener('click', onGoSlots);
   else slotsBtn.remove();
+  // Spec 031: the career's frozen history, one tap from the menu.
+  const palmaresBtn = root.querySelector<HTMLButtonElement>('.palmares-btn')!;
+  if (onGoPalmares) palmaresBtn.addEventListener('click', onGoPalmares);
+  else palmaresBtn.remove();
   const logoutBtn = root.querySelector<HTMLButtonElement>('.logout-btn')!;
   const navBtns = [...root.querySelectorAll<HTMLButtonElement>('.nav-btn')];
   // Spec 020: the "Más" menu groups the secondary/destructive
@@ -163,6 +173,13 @@ export function createTeamScreen(
   root.addEventListener('click', (e) => {
     if (!moreMenu.classList.contains('hidden') && !(e.target as HTMLElement).closest('.more-wrap')) {
       moreMenu.classList.add('hidden');
+    }
+  });
+  // Spec 032: Escape closes Más and hands focus back (US5/FR-007).
+  root.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !moreMenu.classList.contains('hidden')) {
+      moreMenu.classList.add('hidden');
+      moreBtn.focus();
     }
   });
 
@@ -240,13 +257,23 @@ export function createTeamScreen(
   });
 
   function updateRaceButton(): void {
-    const label = isSeasonComplete(career)
-      ? 'Ver temporada'
-      : `${eventLabel(pendingEvent(career) ?? 'race')} · R${Math.min(
-          career.currentRaceIndex + 1,
-          career.calendar.length
-        )}: ${(getTrackById(career.calendar[career.currentRaceIndex]) ?? ALL_TRACKS[0]).name}`;
-    for (const btn of goRaceBtns) btn.textContent = label;
+    // El bloque volt habla en dos capas: el acto (Inter 800) y la
+    // referencia de la ronda en mono (dato), como en el boceto de
+    // referencia.
+    for (const btn of goRaceBtns) {
+      if (isSeasonComplete(career)) {
+        btn.textContent = 'Ver temporada';
+        continue;
+      }
+      btn.innerHTML = '<span class="go-act"></span><span class="go-sub"></span>';
+      btn.querySelector<HTMLElement>('.go-act')!.textContent = eventLabel(
+        pendingEvent(career) ?? 'race'
+      );
+      btn.querySelector<HTMLElement>('.go-sub')!.textContent = `R${Math.min(
+        career.currentRaceIndex + 1,
+        career.calendar.length
+      )}: ${(getTrackById(career.calendar[career.currentRaceIndex]) ?? ALL_TRACKS[0]).name}`;
+    }
   }
   for (const btn of goRaceBtns) btn.addEventListener('click', () => onGoRace());
 
@@ -260,8 +287,20 @@ export function createTeamScreen(
     btn.addEventListener('click', () => setTab(btn.dataset.tab as TabId));
   }
 
-  function refresh(): void {
+  // Spec 032: every spend leaves a visible trace — the wallet shows
+  // its delta for a moment (US2/FR-004).
+  let deltaTimer: number | undefined;
+  function refresh(delta?: number): void {
     budgetValueEl.textContent = String(Math.round(career.budget));
+    if (delta !== undefined) {
+      const chip = root.querySelector<HTMLElement>('#budget-delta');
+      if (chip) {
+        chip.textContent = (delta < 0 ? '−' : '+') + Math.abs(delta);
+        chip.classList.add('show');
+        window.clearTimeout(deltaTimer);
+        deltaTimer = window.setTimeout(() => chip.classList.remove('show'), 1600);
+      }
+    }
     updateRaceButton();
     renderTab();
   }
@@ -276,33 +315,95 @@ export function createTeamScreen(
     else renderChampTab();
   }
 
-  // ---- Tab: Mi Equipo ----
+  // ---- Tab: Mi Equipo ---- (spec 032: the Carbono hub)
   function renderTeamTab(): void {
-    // Spec 020: the dashboard lands on the team summary — livery,
-    // big money figure and championship position — before any form.
-    const hero = document.createElement('section');
-    hero.className = 'team-hero cut';
     const champTables = computeChampionship(career.seasonResults);
     const champPos = champTables.teams.findIndex(
       (t) => t.teamId === roster.playerTeamId
     );
-    hero.innerHTML = `
-      <div class="hero-info">
-        <div class="hero-name"></div>
-        <div class="hero-pos"></div>
-      </div>
-      <div class="hero-money"></div>`;
-    hero.querySelector<HTMLElement>('.hero-name')!.textContent =
-      playerEntry().team.name;
-    hero.querySelector<HTMLElement>('.hero-pos')!.textContent =
-      champPos >= 0 ? `P${champPos + 1} constructores` : 'Sin correr aún';
-    hero.querySelector<HTMLElement>('.hero-money')!.textContent =
-      `${Math.round(career.budget)} M€`;
-    hero.style.borderLeftColor = playerEntry().team.color;
+    const track =
+      getTrackById(career.calendar[career.currentRaceIndex]) ?? ALL_TRACKS[0];
+
+    // The name owns the board: it sits directly on the grid, with a
+    // graduated ruler under it (the world's furniture).
+    const hero = document.createElement('section');
+    hero.className = 'hub-hero';
+    const heroName = document.createElement('h1');
+    heroName.className = 'hub-name';
+    heroName.textContent = playerEntry().team.name;
+    const dataline = document.createElement('p');
+    dataline.className = 'hub-dataline';
+    const round = Math.min(career.currentRaceIndex + 1, career.calendar.length);
+    dataline.textContent =
+      (champPos >= 0 ? `P${champPos + 1} CONSTRUCTORES` : 'SIN CORRER AÚN') +
+      ` · TEMPORADA ${career.seasonNumber} · R${round}/${career.calendar.length} · GP ${track.name.toUpperCase()}`;
+    hero.append(heroName, dataline);
+    const ruler = document.createElement('div');
+    ruler.className = 'hub-ruler';
+    ruler.setAttribute('role', 'presentation');
+    hero.appendChild(ruler);
     panel.appendChild(hero);
 
-    // Section shortcuts (the nav rail/bar holds them too; these make
-    // the dashboard a hub on its own).
+    // The engineering title block: the team as a drawing's data.
+    const drivers = playerEntry().drivers;
+    const races = career.seasonResults.filter((r) => r.event === 'race');
+    let best: { pos: number; round: number; name: string } | null = null;
+    for (const r of races) {
+      if (!best || r.position < best.pos) {
+        best = {
+          pos: r.position,
+          round: career.calendar.indexOf(r.trackId) + 1,
+          name: getTrackById(r.trackId)?.name ?? '',
+        };
+      }
+    }
+    const titleblock = document.createElement('section');
+    titleblock.className = 'titleblock';
+    titleblock.setAttribute('aria-label', 'Ficha del equipo');
+    const rowEl = (k: string): HTMLElement => {
+      const key = document.createElement('div');
+      key.className = 'k';
+      key.textContent = k;
+      const val = document.createElement('div');
+      val.className = 'v';
+      titleblock.append(key, val);
+      return val;
+    };
+    const money = rowEl('Presupuesto');
+    const moneyNum = document.createElement('span');
+    moneyNum.className = 'money';
+    moneyNum.id = 'hub-budget';
+    moneyNum.textContent = String(Math.round(career.budget));
+    money.append(moneyNum, document.createTextNode(' M€ disponibles'));
+    for (const seat of [0, 1] as const) {
+      const v = rowEl(`Piloto ${seat + 1}`);
+      const num = document.createElement('b');
+      num.textContent = String(drivers[seat].number);
+      v.append(num, document.createTextNode(` · ${drivers[seat].name}`));
+    }
+    rowEl('Sede').textContent =
+      `MEC ${career.staff.mechanics} · ING ${career.staff.engineers} · COM ${career.staff.commercial}`;
+    // Spec 032: la librea es un DATO (chip + valor), no el vestuario.
+    const librea = rowEl('Librea');
+    const chip = document.createElement('span');
+    chip.className = 'livery-chip';
+    chip.id = 'hub-livery-chip';
+    chip.style.background = playerEntry().team.color;
+    const chipName = document.createElement('span');
+    chipName.id = 'hub-livery-name';
+    chipName.textContent = playerEntry().team.color;
+    librea.append(chip, chipName);
+    const bestV = rowEl('Mejor resultado');
+    if (best) {
+      const b = document.createElement('b');
+      b.textContent = `P${best.pos}`;
+      bestV.append(b, document.createTextNode(` · R${best.round} ${best.name}`));
+    } else {
+      bestV.textContent = '—';
+    }
+    panel.appendChild(titleblock);
+
+    // Section shortcuts: ghost buttons over the grid.
     const links = document.createElement('div');
     links.className = 'hero-links';
     const linkDefs: [TabId, string][] = [
@@ -322,7 +423,7 @@ export function createTeamScreen(
     }
     panel.appendChild(links);
 
-    const identityTitle = document.createElement('h3');
+    const identityTitle = document.createElement('h2');
     identityTitle.textContent = 'Identidad';
     panel.appendChild(identityTitle);
 
@@ -360,8 +461,13 @@ export function createTeamScreen(
     colorInput.value = playerEntry().team.color;
     colorInput.addEventListener('input', () => {
       playerEntry().team.color = colorInput.value;
-      // Spec 019: the whole UI follows the livery live.
+      // Spec 019 keeps the livery tinting the NOT-redesigned screens;
+      // spec 032: in the hub it only refreshes its own data chip.
       applyTeamAccent(colorInput.value);
+      const c = root.querySelector<HTMLElement>('#hub-livery-chip');
+      if (c) c.style.background = colorInput.value;
+      const n = root.querySelector<HTMLElement>('#hub-livery-name');
+      if (n) n.textContent = colorInput.value;
       syncAll();
     });
     // Spec 019: customizable race numbers (1-99, unique across the
@@ -387,9 +493,13 @@ export function createTeamScreen(
       );
     }
 
-    const devTitle = document.createElement('h3');
-    devTitle.textContent = 'Desarrollo del coche (tus 2 coches a la vez)';
+    const devTitle = document.createElement('h2');
+    devTitle.textContent = 'Desarrollo del coche';
     panel.appendChild(devTitle);
+    const devNote = document.createElement('p');
+    devNote.className = 'hq-costs';
+    devNote.textContent = `Tus 2 coches a la vez · nivel máximo ${DEV_MAX_LEVEL} · ingenieros nivel ${career.staff.engineers} (−${(career.staff.engineers - 1) * 5} % coste)`;
+    panel.appendChild(devNote);
 
     const devList = document.createElement('div');
     devList.className = 'dev-list';
@@ -402,26 +512,63 @@ export function createTeamScreen(
       const cost = Math.ceil(devCost(level) * (1 - 0.05 * (career.staff.engineers - 1)));
       const row = document.createElement('div');
       row.className = 'dev-row';
+      row.dataset.dev = devId;
       row.innerHTML = `
-        <span class="dev-name">${DEV_LABELS[devId]}</span>
+        <span class="dev-name"></span>
         <span class="dev-level"></span>
-        <button type="button" class="btn dev-btn"></button>`;
-      const levelEl = row.querySelector<HTMLElement>('.dev-level')!;
-      levelEl.textContent = `${level}/${DEV_MAX_LEVEL}`;
-      const btn = row.querySelector<HTMLButtonElement>('.dev-btn')!;
+        <div class="ticks"></div>`;
+      row.querySelector<HTMLElement>('.dev-name')!.textContent = DEV_LABELS[devId];
+      row.querySelector<HTMLElement>('.dev-level')!.textContent =
+        `${level}/${DEV_MAX_LEVEL}`;
+      // 15 ticks: the datum is ink, never the action color.
+      const ticks = row.querySelector<HTMLElement>('.ticks')!;
+      ticks.setAttribute('role', 'img');
+      ticks.setAttribute('aria-label', `Nivel ${level} de ${DEV_MAX_LEVEL}`);
+      for (let i = 0; i < DEV_MAX_LEVEL; i++) {
+        const t = document.createElement('i');
+        if (i < level) t.className = 'fill';
+        ticks.appendChild(t);
+      }
       const maxed = level >= DEV_MAX_LEVEL;
-      btn.textContent = maxed ? 'MÁX' : `+1 · ${cost} M€`;
-      btn.disabled = maxed || career.budget < cost;
-      btn.addEventListener('click', () => {
-        if (level >= DEV_MAX_LEVEL || career.budget < cost) return;
-        career.budget -= cost;
-        developments[devId] = level + 1;
-        syncAll();
-        refresh();
-      });
+      if (maxed) {
+        // Spec 032: maxed is engraved, not whispered, and it does not
+        // borrow the action color (data is data).
+        const mark = document.createElement('span');
+        mark.className = 'dev-max';
+        mark.textContent = 'MÁX';
+        row.appendChild(mark);
+      } else {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn dev-btn';
+        btn.disabled = career.budget < cost;
+        const costEl = document.createElement('span');
+        costEl.className = 'cost';
+        costEl.textContent = String(cost);
+        btn.append('+1 · ', costEl, document.createTextNode(' M€'));
+        btn.addEventListener('click', () => {
+          if (level >= DEV_MAX_LEVEL || career.budget < cost) return;
+          career.budget -= cost;
+          developments[devId] = level + 1;
+          syncAll();
+          refresh(-cost);
+          focusDevRow(devId);
+        });
+        row.appendChild(btn);
+      }
       devList.appendChild(row);
     }
     panel.appendChild(devList);
+  }
+
+  // Spec 032: a re-render must not dump keyboard focus on the body —
+  // it goes back to the acted row (or the next buyable one).
+  function focusDevRow(devId: string): void {
+    const row = panel.querySelector(`.dev-row[data-dev="${devId}"]`);
+    const btn = row?.querySelector<HTMLButtonElement>('.dev-btn:not(:disabled)');
+    const next =
+      btn ?? panel.querySelector<HTMLButtonElement>('.dev-row .dev-btn:not(:disabled)');
+    next?.focus({ preventScroll: true });
   }
 
   // ---- Tab: Pilotos (spec 019) ----
@@ -478,16 +625,26 @@ export function createTeamScreen(
         levelEl.textContent = `${value}/${MAX_DRIVER_STAT}`;
         const btn = row.querySelector<HTMLButtonElement>('.dev-btn')!;
         const maxed = value >= MAX_DRIVER_STAT;
-        btn.textContent = maxed ? 'MÁX' : `+${steps} · ${cost} M€`;
-        btn.disabled = maxed || career.budget < cost;
-        btn.addEventListener('click', () => {
-          // Shared validation + mutation (also covered by the harness).
-          const result = applyPilotUpgrade(driver, attr.id, career.budget);
-          if (!result.ok) return;
-          career.budget -= result.cost;
-          syncAll();
-          refresh();
-        });
+        if (maxed) {
+          // FR-011: el máximo es la misma caja grabada en todo el hub,
+          // no un botón apagado distinto.
+          btn.remove();
+          const maxEl = document.createElement('span');
+          maxEl.className = 'dev-max';
+          maxEl.textContent = 'MÁX';
+          row.appendChild(maxEl);
+        } else {
+          btn.textContent = `+${steps} · ${cost} M€`;
+          btn.disabled = career.budget < cost;
+          btn.addEventListener('click', () => {
+            // Shared validation + mutation (also covered by the harness).
+            const result = applyPilotUpgrade(driver, attr.id, career.budget);
+            if (!result.ok) return;
+            career.budget -= result.cost;
+            syncAll();
+            refresh(-result.cost);
+          });
+        }
         list.appendChild(row);
       }
       block.appendChild(list);
@@ -520,15 +677,24 @@ export function createTeamScreen(
       const btn = row.querySelector<HTMLButtonElement>('.staff-btn')!;
       const cost = staffUpgradeCost(level);
       const maxed = level >= STAFF_MAX_LEVEL;
-      btn.textContent = maxed ? 'MÁX' : `Mejorar · ${cost} M€`;
-      btn.disabled = maxed || career.budget < cost;
-      btn.addEventListener('click', () => {
-        if (maxed || career.budget < cost) return;
-        career.budget -= cost;
-        career.staff[key] += 1;
-        syncAll();
-        refresh();
-      });
+      if (maxed) {
+        // FR-011: misma caja grabada que los desarrollos y los pilotos.
+        btn.remove();
+        const maxEl = document.createElement('span');
+        maxEl.className = 'dev-max';
+        maxEl.textContent = 'MÁX';
+        row.appendChild(maxEl);
+      } else {
+        btn.textContent = `Mejorar · ${cost} M€`;
+        btn.disabled = career.budget < cost;
+        btn.addEventListener('click', () => {
+          if (career.budget < cost) return;
+          career.budget -= cost;
+          career.staff[key] += 1;
+          syncAll();
+          refresh(-cost);
+        });
+      }
       staffList.appendChild(row);
     }
     panel.appendChild(staffList);
