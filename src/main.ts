@@ -5,6 +5,7 @@ import { createTeamScreen } from './team-screen';
 import { createRaceScreen } from './race-screen';
 import { createSeasonScreen } from './season-screen';
 import { createSlotsScreen } from './slots-screen';
+import { createPalmaresScreen } from './palmares-screen';
 import { migrateLegacySaves } from './slots';
 import { loadRoster } from './roster';
 import { buildRaceStateFromRoster, expectedPace } from './race-builder';
@@ -23,7 +24,12 @@ const app = document.getElementById('app')!;
 initTheme();
 
 function showTeamScreen(): void {
-  swapScreen(app, () => createTeamScreen(app, showRaceScreen, showSlotsScreen));
+  swapScreen(app, () => createTeamScreen(app, showRaceScreen, showSlotsScreen, showPalmaresScreen));
+}
+
+// Spec 031: the career's frozen history (closed seasons).
+function showPalmaresScreen(): void {
+  swapScreen(app, () => createPalmaresScreen(app, showTeamScreen));
 }
 
 // Spec 013: the three save slots. Playing/creating a slot activates

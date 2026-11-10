@@ -1,4 +1,5 @@
 import { Driver, RaceCarState, RaceState, TyreCompound } from './types';
+import type { RaceStandingEntry } from './championship';
 import { isRaceFinished, queuePitCommand, resetPitCommands, simulationTick } from './simulation';
 import { buildTestRaceState } from './test-grid';
 import {
@@ -21,7 +22,7 @@ import {
   setDriverNumber,
 } from './roster';
 import { assignDriverCodes, driverCodeBase } from './driver-codes';
-import { createDefaultCareer } from './career';
+import { createDefaultCareer, recordPalmares, palmaresTotals } from './career';
 import { setStartCompound } from './race-builder';
 import { buildPaceChart, chartScale } from './pace-chart';
 import { evolveRivals, RIVAL_STAT_CAP } from './roster';
@@ -973,10 +974,111 @@ export function runTestHarness(): string {
   // Acceptance check 13 (spec 029): rival evolution.
   rivalEvolutionSelfCheck(lines);
 
+  // Acceptance check 14 (spec 031): the frozen career history.
+  palmaresSelfCheck(lines);
+
   return lines.join('\n');
 }
 
-// When executed directly with node (npm run harness), print the report.
+// Acceptance check 14 (spec 031): the frozen career history. A
+// closed season becomes exactly one entry (position, champion name,
+// race-only wins/podiums); closing never duplicates; totals are the
+// sum of the entries.
+function palmaresSelfCheck(lines: string[]): void {
+  let failures = 0;
+  const expect = (ok: boolean, what: string): void => {
+    if (!ok) {
+      failures++;
+      lines.push('FAIL palmares: ' + what);
+    }
+  };
+
+  const roster = createDefaultRoster(500);
+  const player = roster.entries.find((e) => e.team.id === roster.playerTeamId)!;
+  const rival = roster.entries.find((e) => e.team.id !== roster.playerTeamId)!;
+  // Rival teams carry 2 drivers each: the P4 of race 2 borrows a car
+  // from a SECOND rival (a third driver of `rival` does not exist).
+  const rival2 = roster.entries.filter((e) => e.team.id !== roster.playerTeamId)[1]!;
+  const S = (driverId: string, teamId: string, points: number): RaceStandingEntry => ({
+    driverId,
+    teamId,
+    points,
+  });
+
+  const career = createDefaultCareer(500, 'normal');
+  career.calendar = [career.calendar[0], career.calendar[1]];
+  career.seasonResults = [
+    // Race 1: my two cars P1-P2 (1 win, 2 podiums).
+    {
+      trackId: career.calendar[0],
+      event: 'race',
+      position: 1,
+      prize: 0,
+      standings: [
+        S(player.drivers[0].id, player.team.id, 25),
+        S(player.drivers[1].id, player.team.id, 18),
+        S(rival.drivers[0].id, rival.team.id, 15),
+      ],
+    },
+    // Race 2: rival wins, my cars P2 + P5 (1 more podium).
+    {
+      trackId: career.calendar[1],
+      event: 'race',
+      position: 2,
+      prize: 0,
+      standings: [
+        S(rival.drivers[0].id, rival.team.id, 25),
+        S(player.drivers[0].id, player.team.id, 18),
+        S(rival.drivers[1].id, rival.team.id, 15),
+        S(rival2.drivers[0].id, rival2.team.id, 12),
+        S(player.drivers[1].id, player.team.id, 10),
+      ],
+    },
+    // Sprint (extra act of round 1): my car wins it — it counts for
+    // the CHAMPIONSHIP tables, but NOT as a season win/podium.
+    {
+      trackId: career.calendar[0],
+      event: 'sprint2',
+      position: 1,
+      prize: 0,
+      standings: [S(player.drivers[1].id, player.team.id, 25)],
+    },
+  ];
+
+  expect(recordPalmares(career, roster), 'temporada completa -> entrada grabada');
+  const entry = career.palmares?.[0];
+  expect(career.palmares?.length === 1 && !!entry, 'exactamente una entrada');
+  expect(entry?.season === 1, 'de la temporada 1');
+  expect(entry?.wins === 1, 'solo las carreras cuentan (la victoria del sprint no)');
+  expect(entry?.podiums === 3, 'podios por coche: P1+P2 y P2 = 3');
+  expect(entry?.teamPosition === 1, 'puesto de constructores con la tabla completa');
+  expect(entry?.champion === player.drivers[1].name, 'campeón de pilotos congelado por nombre');
+
+  expect(recordPalmares(career, roster) === false, 'cerrar dos veces no duplica');
+  expect(career.palmares?.length === 1, 'sigue habiendo una entrada');
+
+  career.seasonNumber = 2;
+  career.seasonResults = [];
+  expect(recordPalmares(career, roster) === false, 'temporada sin completar no graba');
+
+  const totals = palmaresTotals([
+    entry!,
+    { season: 0, teamPosition: 3, champion: '', wins: 2, podiums: 4 },
+  ]);
+  expect(
+    totals.titles === 1 && totals.wins === 3 && totals.podiums === 7,
+    'totales = suma de filas (solo P1 es título)'
+  );
+  expect(createDefaultCareer().palmares?.length === 0, 'partida nueva sin historial');
+
+  lines.push(
+    failures === 0
+      ? 'Palmarés check: entrada única OK | solo carreras OK | campeón por nombre OK | idempotente OK | totales OK'
+      : 'Palmarés check: ' + failures + ' FALLOS'
+  );
+}
+
+
 // The typeof guards keep this block out of the browser build.
 declare const require: { main: unknown };
 declare const module: { exports: unknown };

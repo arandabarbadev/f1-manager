@@ -1,0 +1,133 @@
+@import './ui.css';
+
+/* ============================================================
+   PALMARÉS SCREEN (spec 031): career totals + one row per closed
+   season, the recent first, champion seasons highlighted.
+   ============================================================ */
+
+.palmares-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
+  font-family: var(--font-ui);
+  background: var(--bg);
+}
+
+.palmares-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.palmares-header h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.palmares-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.palmares-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Totals: three equal tiles, big tabular numbers. */
+.pt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.pt-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-data);
+  text-align: center;
+}
+
+.pt-num {
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.pt-label {
+  font-size: 12px;
+  color: var(--dim);
+}
+
+/* One row per closed season. */
+.palmares-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--border);
+  border-radius: var(--radius-data);
+  background: var(--bg);
+}
+
+.palmares-row + .palmares-row {
+  margin-top: 10px;
+}
+
+.palmares-row.champ {
+  border-left-color: var(--accent);
+}
+
+.pr-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pr-season {
+  font-size: 15px;
+}
+
+.pr-pos {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.palmares-row.champ .pr-pos {
+  color: var(--accent);
+}
+
+.pr-body {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+/* Empty state (constitution V): explain what will appear. */
+.palmares-empty p {
+  margin: 8px 0 0;
+  color: var(--dim);
+  line-height: 1.5;
+}

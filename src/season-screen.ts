@@ -1,5 +1,5 @@
 import './season-screen.css';
-import { getOrCreateCareer, isSeasonComplete, saveCareer } from './career';
+import { getOrCreateCareer, isSeasonComplete, recordPalmares, saveCareer } from './career';
 import { eventShortLabel } from './weekend';
 import { getTrackById } from './tracks-generator';
 import { themeButtonLabel, toggleTheme } from './theme';
@@ -142,6 +142,9 @@ export function createSeasonScreen(container: HTMLElement, onExit: () => void): 
   newSeasonBtn.className = 'btn primary';
   newSeasonBtn.textContent = 'Empezar temporada nueva';
   newSeasonBtn.addEventListener('click', () => {
+    // Spec 031: freeze this season into the palmarés BEFORE its
+    // results are wiped (idempotent: one entry per season).
+    recordPalmares(career, roster);
     // Next season: index and results reset; budget and car upgrades
     // stay untouched.
     career.seasonNumber += 1;

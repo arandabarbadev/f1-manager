@@ -1,7 +1,9 @@
 import { INITIAL_BUDGET } from './roster';
+import type { Roster } from './roster';
 import { ALL_TRACKS } from './tracks-generator';
 import { activeCareerKey } from './slots';
 import { difficultyOrHard, Difficulty } from './difficulty';
+import { computeChampionship } from './championship';
 import type { RaceStandingEntry } from './championship';
 import type { WeekendEvent } from './types';
 
@@ -49,6 +51,20 @@ export interface CareerState {
   seasonResults: SeasonResult[]; // one entry per completed race
   staff: StaffState;
   sponsorIds: number[]; // signed sponsors (up to MAX_ACTIVE_SPONSORS)
+  // Spec 031: the frozen history of CLOSED seasons (one entry per
+  // season, recorded at "Empezar temporada nueva"). Optional so old
+  // saves migrate to an empty (not-yet-written) palmarés.
+  palmares?: SeasonPalmaresEntry[];
+}
+
+// Spec 031: what stays of a season once it is closed. Names are
+// frozen at close time — later renames do not rewrite history.
+export interface SeasonPalmaresEntry {
+  season: number;
+  teamPosition: number; // constructors position of the player's team (0 = unknown)
+  champion: string; // that season's drivers-champion name ('' = unknown)
+  wins: number; // races won by either of the team's two cars
+  podiums: number; // cars on the podium (a 1-2 finish = 2)
 }
 
 // Spec 010 migration table: names of the OLD (pre-010) calendar in
@@ -85,6 +101,7 @@ export function createDefaultCareer(
     seasonResults: [],
     staff: { mechanics: 1, engineers: 1, commercial: 1 },
     sponsorIds: [],
+    palmares: [],
   };
 }
 
@@ -152,6 +169,8 @@ export function loadCareer(): CareerState | null {
       ),
       seasonNumber: typeof parsed.seasonNumber === 'number' ? parsed.seasonNumber : 1,
       seasonResults: migratedResults,
+      // Spec 031: old saves simply start with no history yet.
+      palmares: Array.isArray(parsed.palmares) ? parsed.palmares : [],
       staff: {
         mechanics: parsed.staff?.mechanics ?? 1,
         engineers: parsed.staff?.engineers ?? 1,
@@ -178,4 +197,66 @@ export function getOrCreateCareer(
   difficulty: Difficulty = 'hard'
 ): CareerState {
   return loadCareer() ?? createDefaultCareer(fallbackBudget, difficulty);
+}
+
+// ------------------------------------------------------------
+// Palmarés (spec 031): freeze one season into history at the close.
+// ------------------------------------------------------------
+
+// Career totals derived from the entries (single source of truth —
+// nothing precomputed is stored).
+export interface PalmaresTotals {
+  titles: number;
+  wins: number;
+  podiums: number;
+}
+
+export function palmaresTotals(entries: SeasonPalmaresEntry[]): PalmaresTotals {
+  return entries.reduce(
+    (acc, e) => ({
+      titles: acc.titles + (e.teamPosition === 1 ? 1 : 0),
+      wins: acc.wins + e.wins,
+      podiums: acc.podiums + e.podiums,
+    }),
+    { titles: 0, wins: 0, podiums: 0 }
+  );
+}
+
+// Record the CURRENT season into the palmarés. Only runs on a
+// COMPLETE season, and at most once per season (looking at the list
+// itself) — closing twice never duplicates. Counts RACES only
+// (sprint/quali wins are not season wins); standings are stored in
+// final-classification order, so index 0 = win and index ≤ 2 = podium.
+// Returns true when a new entry was written.
+export function recordPalmares(career: CareerState, roster: Roster | null): boolean {
+  if (!isSeasonComplete(career)) return false;
+  career.palmares ??= [];
+  if (career.palmares.some((p) => p.season === career.seasonNumber)) return false;
+  const tables = computeChampionship(career.seasonResults);
+  const teamIdx = roster
+    ? tables.teams.findIndex((t) => t.teamId === roster.playerTeamId)
+    : -1;
+  let wins = 0;
+  let podiums = 0;
+  for (const result of career.seasonResults) {
+    if (result.event !== 'race' || !result.standings) continue;
+    result.standings.forEach((entry, i) => {
+      if (!roster || entry.teamId !== roster.playerTeamId) return;
+      if (i === 0) wins += 1;
+      if (i <= 2) podiums += 1;
+    });
+  }
+  const champId = tables.drivers[0]?.driverId;
+  const champion =
+    champId && roster
+      ? roster.entries.flatMap((e) => e.drivers).find((d) => d.id === champId)?.name ?? ''
+      : '';
+  career.palmares.push({
+    season: career.seasonNumber,
+    teamPosition: teamIdx >= 0 ? teamIdx + 1 : 0,
+    champion,
+    wins,
+    podiums,
+  });
+  return true;
 }
