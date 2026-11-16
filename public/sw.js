@@ -6,7 +6,7 @@
 //   - Same-origin assets (hashed, immutable names): cache-first.
 // Bump CACHE to invalidate everything on a breaking change.
 // ============================================================
-const CACHE = 'f1manager-v3';
+const CACHE = 'f1manager-v4';
 
 self.addEventListener('install', () => {
   self.skipWaiting();

@@ -154,7 +154,7 @@ export function createRaceScreen(
          cover and center on the WHOLE screen so its actions stay
          tappable in portrait. -->
     <div class="gp-intro hidden">
-      <div class="gp-intro-card cut">
+      <div class="gp-intro-card">
         <h3 class="gp-intro-name"></h3>
         <div class="gp-intro-laps"></div>
         <canvas class="gp-intro-map" width="240" height="150"></canvas>
@@ -165,14 +165,14 @@ export function createRaceScreen(
          presentation and the lights (race/sprint only) — one row per
          player car, S/M/H rings, preselected by the builder's draw. -->
     <div class="tyre-pick hidden">
-      <div class="tyre-pick-card cut">
+      <div class="tyre-pick-card">
         <h3 class="tp-title">Goma de salida</h3>
         <div class="tp-rows"></div>
         <button type="button" class="btn primary tp-go">Salida</button>
       </div>
     </div>
     <div class="results-overlay hidden">
-      <div class="results-panel cut">
+      <div class="results-panel">
         <h2 class="results-title">Carrera terminada</h2>
         <div class="podium"></div>
         <div class="my-results"></div>
@@ -1266,7 +1266,7 @@ export function createRaceScreen(
     const compounds: TyreCompound[] = ['soft', 'medium', 'hard', 'inter', 'wet'];
     for (const car of state.cars.filter((c) => c.isPlayerControlled)) {
       const box = document.createElement('div');
-      box.className = 'pit-box cut';
+      box.className = 'pit-box';
       const title = document.createElement('div');
       title.className = 'pit-name';
       title.textContent = `${driverById(car.driverId).name} — cambiar a:`;

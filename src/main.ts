@@ -1,5 +1,5 @@
 import { initTheme } from './theme';
-import { applyTeamAccent } from './accent';
+import { applyTeamLivery } from './livery';
 import { createAuthScreen } from './auth-screen';
 import { createTeamScreen } from './team-screen';
 import { createRaceScreen } from './race-screen';
@@ -82,12 +82,13 @@ function showRaceScreen(): void {
 function start(): void {
   // Spec 013: pre-slots saves become slot 'a' before anything loads.
   migrateLegacySaves();
-  // Spec 019: the livery color of the active slot's team becomes
-  // the UI accent for every screen from the first paint.
+  // Spec 033: the livery color of the active slot's team feeds the
+  // DATA channel (--livery: chip, dots, pace-chart lines) from the
+  // first paint. The interface never reads it (Ley del Volt).
   const bootRoster = loadRoster();
   if (bootRoster) {
     const team = bootRoster.entries.find((e) => e.team.id === bootRoster.playerTeamId)?.team;
-    if (team) applyTeamAccent(team.color);
+    if (team) applyTeamLivery(team.color);
   }
   if (!firebaseConfigured) {
     createAuthScreen(app, showTeamScreen);

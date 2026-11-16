@@ -1,17 +1,22 @@
 @import './ui.css';
 
 /* ============================================================
-   PALMARÉS SCREEN (spec 031): career totals + one row per closed
-   season, the recent first, champion seasons highlighted.
+   PALMARÉS SCREEN (spec 031) — en el mundo (033): la memoria de
+   la carrera sobre la rejilla. Totales arriba (cifras grandes en
+   mono dentro del módulo), una fila por temporada cerrada sobre
+   hairline, y la temporada campeona GRABADA — borde de tinta,
+   el lenguaje MÁX del hub, jamás el color de acción.
    ============================================================ */
 
 .palmares-screen {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  color: var(--text);
+  color: var(--hub-text);
   font-family: var(--font-ui);
-  background: var(--bg);
+  background-color: var(--hub-bg);
+  background-image: var(--hub-grid-image);
+  background-size: var(--hub-grid-size);
 }
 
 .palmares-header {
@@ -19,19 +24,28 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 12px 16px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 56px;
+  background: var(--hub-mast-bg);
+  border-bottom: 1px solid var(--hub-line);
 }
 
 .palmares-header h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
 }
 
 .palmares-header-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+}
+
+.palmares-header .btn {
+  min-height: 40px;
+  padding: 8px 12px;
 }
 
 .palmares-main {
@@ -39,14 +53,33 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 18px;
+  padding: 24px 18px 48px;
   max-width: 720px;
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
 }
 
-/* Totals: three equal tiles, big tabular numbers. */
+/* Módulos de la pantalla (la clase `card` viene del markup 031). */
+.palmares-totals,
+.palmares-list,
+.palmares-empty {
+  background: var(--hub-panel);
+  border: 1px solid var(--hub-line);
+  border-radius: 0;
+  padding: 16px 18px;
+}
+
+.palmares-totals h2,
+.palmares-empty h2 {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Totales: tres baldosas iguales, cifra grande en mono. */
 .pt-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -56,35 +89,41 @@
 .pt-tile {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 12px 8px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-data);
+  gap: 4px;
+  padding: 12px 8px 10px;
+  background: transparent;
+  border: 1px solid var(--hub-line-soft);
+  border-radius: 0;
   text-align: center;
 }
 
 .pt-num {
+  font-family: var(--hub-mono);
   font-size: 30px;
-  font-variant-numeric: tabular-nums;
+  font-weight: 700;
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 .pt-label {
-  font-size: 12px;
-  color: var(--dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hub-dim);
 }
 
-/* One row per closed season. */
+/* Una fila por temporada cerrada. La campeona queda GRABADA:
+   borde de tinta 1.5 px (lenguaje MÁX) — contundente sin acción. */
 .palmares-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--border);
-  border-radius: var(--radius-data);
-  background: var(--bg);
+  border: 1px solid var(--hub-line-soft);
+  border-left: 4px solid var(--hub-line-soft);
+  border-radius: 0;
+  background: transparent;
 }
 
 .palmares-row + .palmares-row {
@@ -92,7 +131,9 @@
 }
 
 .palmares-row.champ {
-  border-left-color: var(--accent);
+  border: 1.5px solid var(--hub-text);
+  border-left-width: 4px;
+  background: var(--hub-line-soft);
 }
 
 .pr-head {
@@ -103,17 +144,18 @@
 }
 
 .pr-season {
-  font-size: 15px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hub-dim);
 }
 
 .pr-pos {
-  font-size: 18px;
+  font-family: var(--hub-mono);
+  font-size: 17px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-
-.palmares-row.champ .pr-pos {
-  color: var(--accent);
 }
 
 .pr-body {
@@ -121,13 +163,38 @@
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 4px 12px;
-  font-size: 13px;
-  color: var(--dim);
+  font-size: 12.5px;
 }
 
-/* Empty state (constitution V): explain what will appear. */
+.pr-champ {
+  color: var(--hub-dim);
+}
+
+.pr-counts {
+  font-family: var(--hub-mono);
+  font-size: 12px;
+  color: var(--hub-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Estado vacío (constitución V): explica qué aparecerá. */
 .palmares-empty p {
   margin: 8px 0 0;
-  color: var(--dim);
-  line-height: 1.5;
+  color: var(--hub-dim);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .palmares-main {
+    padding: 14px 12px 32px;
+  }
+
+  .palmares-header {
+    padding: 0 14px;
+  }
+
+  .pt-num {
+    font-size: 24px;
+  }
 }

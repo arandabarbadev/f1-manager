@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-10T00:00:00Z",
-  "title": "Design System: Motorsport Manager — Hub «Carbono»",
+  "generatedAt": "2026-11-15T00:00:00Z",
+  "title": "Design System: Motorsport Manager — «Carbono» (toda la app)",
   "extensions": {
     "colorMeta": {
       "carbon-ground": { "role": "neutral", "displayName": "Carbono mate", "canonical": "#0E0F11", "tonalRamp": ["#060708", "#0E0F11", "#141519", "#1C1E23", "#26292F", "#3A3E46", "#5F646D", "#9BA0AA"] },
       "carbon-panel": { "role": "neutral", "displayName": "Panel enmarcado", "canonical": "#141519", "tonalRamp": ["#0A0B0D", "#101216", "#141519", "#1A1C21", "#22252B", "#2E323A", "#4A4F59", "#767C88"] },
       "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "#262932", "tonalRamp": ["#121419", "#1A1D23", "#22252D", "#262932", "#3A3F4C", "#5A616F", "#8A92A1", "#C0C6D2"] },
-      "hairline-soft": { "role": "neutral", "displayName": "Hairline suave (separador de filas)", "canonical": "#1C1E23", "tonalRamp": ["#0C0D10", "#121317", "#17191E", "#1C1E23", "#2A2D35", "#3E434E", "#646B79", "#9AA1AF"] },
+      "hairline-soft": { "role": "neutral", "displayName": "Hairline suave (separador de filas, materia del jugador)", "canonical": "#1C1E23", "tonalRamp": ["#0C0D10", "#121317", "#17191E", "#1C1E23", "#2A2D35", "#3E434E", "#646B79", "#9AA1AF"] },
       "ink": { "role": "neutral", "displayName": "Tinta (texto y datos)", "canonical": "#F2F3F5", "tonalRamp": ["#101114", "#2A2C31", "#454850", "#6C7078", "#9BA0AA", "#C6C9CF", "#F2F3F5", "#FFFFFF"] },
       "ink-dim": { "role": "neutral", "displayName": "Tinta atenuada (labels, pestañas inactivas)", "canonical": "#9BA0AA", "tonalRamp": ["#232528", "#3C3F45", "#5A5E66", "#787D87", "#9BA0AA", "#B8BCC4", "#D6D9DE", "#F2F3F5"] },
       "volt": { "role": "primary", "displayName": "Volt (acción y activo)", "canonical": "#D6FF3F", "tonalRamp": ["#2A340A", "#414F10", "#5A6D16", "#7D9000", "#9CB41E", "#BCD92C", "#D6FF3F", "#E9FF8F"] },
@@ -16,24 +16,34 @@
       "paper-line": { "role": "neutral", "displayName": "Línea papel (tema claro)", "canonical": "#B9BFAE", "tonalRamp": ["#3A3F36", "#5B6152", "#7E846F", "#9CA289", "#B9BFAE", "#CFCFBF", "#E2E4D8", "#F2F3EA"] },
       "paper-ink": { "role": "neutral", "displayName": "Tinta papel (texto en claro)", "canonical": "#16181C", "tonalRamp": ["#101114", "#16181C", "#2C2F35", "#454A52", "#5B6068", "#8A8F97", "#C3C7CC", "#EDEFE9"] },
       "paper-volt": { "role": "primary", "displayName": "Volt de fondo en claro", "canonical": "#CDF630", "tonalRamp": ["#283308", "#3E4D0E", "#566815", "#74881C", "#96B023", "#B4D229", "#CDF630", "#E4FA86"] },
-      "volt-deep-line": { "role": "primary", "displayName": "Volt oscurecido (líneas y foco en claro)", "canonical": "#7D9000", "tonalRamp": ["#232B03", "#394406", "#4F5C09", "#7D9000", "#9CAE22", "#BCCB4E", "#D8E283", "#EDF2BC"] }
+      "volt-deep-line": { "role": "primary", "displayName": "Volt oscurecido (líneas y foco en claro)", "canonical": "#7D9000", "tonalRamp": ["#232B03", "#394406", "#4F5C09", "#7D9000", "#9CAE22", "#BCCB4E", "#D8E283", "#EDF2BC"] },
+      "signal-green": { "role": "semantic", "displayName": "Semáfora verde (éxito)", "canonical": "#2ea043 / #1a7f37 claro", "note": "Solo significado (avisos success, subidas, feed overtake), siempre con forma/signo." },
+      "signal-amber": { "role": "semantic", "displayName": "Semáfora ámbar (aviso)", "canonical": "#d29922 / #9a6700 claro", "note": "Solo significado (desgaste warn, bandera amarilla, parada en feed)." },
+      "signal-red": { "role": "semantic", "displayName": "Semáfora rojo (peligro)", "canonical": "#da3633 / #cf222e claro", "note": "Solo significado (avisos alert, desgaste danger, DNF, bandera roja). Como TEXTO usa --red-text (#f85149 oscuro, ≥4.5:1 sobre panel y materia), igual que el verde usa --green-text." },
+      "track-asphalt": { "role": "content", "displayName": "Asfalto del trazado (contenido)", "canonical": "#33353a / #d7d9dc claro", "note": "Contenido del deporte sobre el suelo del mundo; calibrado para separarse de carbón y papel." },
+      "tyre-compounds": { "role": "content", "displayName": "Compuestos S/M/H/I/W (contenido F1)", "canonical": "#ff2e1f / #ffd12e / #f2f3f4 / #37c856 / #2aa8e8", "note": "Códigos reales del deporte: anillo + letra siempre; la H lleva borde en claro." },
+      "livery-channel": { "role": "data", "displayName": "Librea del jugador (dato)", "canonical": "--livery crudo + --livery-line = mix 55% livery / 45% tinta del tema", "note": "Canal de DATO (chips, puntos, coches, líneas del gráfico); el cromo jamás lo lee. La guarda evita que una librea oscura esconda una línea." }
     },
     "typographyMeta": {
       "display": { "displayName": "Display — nombre de la escudería", "purpose": "Inter Black 900, mayúsculas, directamente sobre la rejilla; dueño del tablón." },
-      "title": { "displayName": "Title — títulos de sección", "purpose": "Inter 800 13px, tracking 0.16em, mayúsculas, con hairline inferior." },
+      "wordmark": { "displayName": "Wordmark — cabeceras de pantalla", "purpose": "Inter 900 15px mayúsculas (MOTORSPORT MANAGER, PARTIDAS, PALMARÉS…), mismo peso que el mástil del hub." },
+      "title": { "displayName": "Title — títulos de sección", "purpose": "Inter 800 11–13px, tracking 0.16em, mayúsculas; mínimos funcionales de 11px." },
       "label": { "displayName": "Label — claves, campos, botones", "purpose": "Inter 600 11–12px, tracking 0.1–0.14em, mayúsculas, atenuado." },
-      "body": { "displayName": "Body — nombres de fila e ítems", "purpose": "Inter 600 13–14px, texto corriente del hub." },
-      "data": { "displayName": "Cifra — todo número del juego", "purpose": "Mono tabular; monedero, niveles, costes, deltas, rondas. Inter nunca porta cifras." }
+      "body": { "displayName": "Body — nombres de fila e ítems", "purpose": "Inter 600 13–14px, texto corriente." },
+      "data": { "displayName": "Cifra — todo número del juego", "purpose": "Mono tabular 12–15px; monedero, niveles, costes, deltas, rondas, posiciones, diferencias, premios. Inter nunca porta cifras." },
+      "data-broadcast": { "displayName": "Cifra broadcast", "purpose": "Mono 700 22–24px: la VUELTA del header de carrera y los P# del podio y de mis resultados." },
+      "data-micro": { "displayName": "Cifra micro (SVG)", "purpose": "Mono 8.5–11px SOLO dentro del viewBox del gráfico de ritmo (320→~420px: ≥11px efectivos al renderizar)." }
     },
     "shadows": [
-      { "name": "menu-drop", "value": "4px 6px 18px rgba(0, 0, 0, 0.35)", "purpose": "Única sombra del mundo: superficies desplegables que flotan sobre la rejilla (menú Más)." }
+      { "name": "floating-drop", "value": "4px 6px 18px rgba(0, 0, 0, 0.35)", "purpose": "Única sombra del mundo: superficies que FLOTAN sobre la rejilla — menú Más, avisos/toasts, guía de primera vez, overlays de resultados/elección de gomas/presentación del GP e indicador de bandera." }
     ],
     "motion": [
       { "name": "hub-draw", "value": "hub-draw 140ms steps(3, end) — scaleX(0.02)→1, opacity 0.3→1, transform-origin left", "purpose": "La regla graduada y la ficha se traza a pasos al entrar. Gateada tras prefers-reduced-motion: no-preference; con la preferencia activa el mundo aparece quieto." },
       { "name": "delta-chip", "value": "visibility visible durante 1600 ms tras cada gasto/ingreso", "purpose": "Chip delta junto al monedero (aria-live=polite), sin color: el delta es un dato." }
     ],
     "breakpoints": [
-      { "name": "hub-mobile", "value": "860px", "purpose": "Riel→tira horizontal con activo volt en bloque, barra inferior solo-carrera con env(safe-area-inset-bottom), marca corta MM, targets ≥44px." }
+      { "name": "hub-mobile", "value": "860px", "purpose": "Riel→tira horizontal con activo volt en bloque, barra inferior solo-carrera con env(safe-area-inset-bottom), marca corta MM, targets ≥44px." },
+      { "name": "race-mobile", "value": "720px", "purpose": "Carrera en columna: trazado 38vh arriba, torre/HUD abajo; controles compactos (la tira de velocidades 1x-20x es la excepción táctil documentada); filas de torre a 11px con columnas ajustadas." }
     ]
   },
   "components": [
@@ -41,17 +51,17 @@
       "name": "Botón fantasma",
       "kind": "button",
       "refersTo": "button-ghost",
-      "description": "Control secundario: hairline 1px, tinta, mayúsculas; mínimo 44px. El coste en mono sin mayúsculas cuando porta una cifra.",
-      "html": "<button class=\"ds-btn-ghost\">AERODINÁMICA · 31 M€</button>",
-      "css": ".ds-btn-ghost { background: transparent; border: 1px solid #262932; color: #F2F3F5; border-radius: 0; font: 600 12px/1 Inter, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; min-height: 44px; padding: 9px 10px; } .ds-btn-ghost:hover:not(:disabled) { border-color: #9BA0AA; } .ds-btn-ghost:focus-visible { outline: 2px solid #D6FF3F; outline-offset: 2px; } .ds-btn-ghost:disabled { color: #9BA0AA; }"
+      "description": "Control secundario global: hairline 1px, tinta, mínimo 44px; hover con borde atenuado y relleno line-soft.",
+      "html": "<button class=\"ds-btn-ghost\">MI EQUIPO</button>",
+      "css": ".ds-btn-ghost { background: transparent; border: 1px solid #262932; color: #F2F3F5; border-radius: 0; font: 600 13px/1 Inter, system-ui, sans-serif; letter-spacing: 0.04em; min-height: 44px; padding: 10px 14px; } .ds-btn-ghost:hover:not(:disabled) { background: #1C1E23; border-color: #9BA0AA; } .ds-btn-ghost:focus-visible { outline: 2px solid #D6FF3F; outline-offset: 2px; } .ds-btn-ghost:disabled { opacity: 0.45; }"
     },
     {
       "name": "Lámina volt (primario)",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "El único bloque de acción: fondo volt, tinta oscura, Inter 800. Su rareza es el punto.",
+      "description": "El único bloque de acción: fondo volt, tinta oscura, Inter 800 mayúsculas. Su rareza es el punto (Entrar, Jugar/Crear, Empezar temporada nueva, Salida).",
       "html": "<button class=\"ds-btn-volt\">ENTRENAR</button>",
-      "css": ".ds-btn-volt { background: #D6FF3F; border: 1px solid #D6FF3F; color: #101114; border-radius: 0; font: 800 12px/1 Inter, system-ui, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; min-height: 44px; padding: 9px 14px; } .ds-btn-volt:hover:not(:disabled) { filter: brightness(1.06); } .ds-btn-volt:focus-visible { outline: 2px solid #D6FF3F; outline-offset: 2px; }"
+      "css": ".ds-btn-volt { background: #D6FF3F; border: 1px solid #D6FF3F; color: #101114; border-radius: 0; font: 800 13px/1 Inter, system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; min-height: 44px; padding: 10px 14px; } .ds-btn-volt:hover:not(:disabled) { filter: brightness(1.06); } .ds-btn-volt:focus-visible { outline: 2px solid #D6FF3F; outline-offset: 2px; }"
     },
     {
       "name": "Botón de carrera (dos capas)",
@@ -60,6 +70,14 @@
       "description": "Firma del hub: el acto en Inter 800, la referencia de ronda en mono debajo, dentro de la lámina volt.",
       "html": "<button class=\"ds-btn-race\"><span class=\"ds-go-act\">CLASIFICACIÓN</span><span class=\"ds-go-sub\">R9/21 · MONTREAL</span></button>",
       "css": ".ds-btn-race { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; line-height: 1.15; background: #D6FF3F; border: 1px solid #D6FF3F; color: #101114; border-radius: 0; padding: 13px 14px; text-align: left; } .ds-btn-race .ds-go-act { font: 800 13px/1.15 Inter, system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; } .ds-btn-race .ds-go-sub { font: 400 11px/1.15 ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace; letter-spacing: 0.04em; } .ds-btn-race:hover { filter: brightness(1.06); } .ds-btn-race:focus-visible { outline: 2px solid #D6FF3F; outline-offset: 2px; }"
+    },
+    {
+      "name": "Selector compacto (activo en volt)",
+      "kind": "control",
+      "refersTo": "nav-tab",
+      "description": "Grupo de elección contigua — velocidades 1x-20x, dificultad, compuesto elegido: la opción ACTIVA lleva la lámina volt (o el anillo volt en los de goma). Excepción táctil documentada para la tira de velocidades.",
+      "html": "<div class=\"ds-speed\"><button>1x</button><button class=\"ds-active\">5x</button><button>10x</button><button>20x</button></div>",
+      "css": ".ds-speed { display: inline-flex; border: 1px solid #262932; border-radius: 0; overflow: hidden; } .ds-speed button { background: transparent; border: 0; border-radius: 0; color: #F2F3F5; font: 400 12px/1 ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace; min-height: 30px; padding: 4px 10px; } .ds-speed button + button { border-left: 1px solid #262932; } .ds-speed button:hover { background: #1C1E23; } .ds-speed .ds-active { background: #D6FF3F; color: #101114; font-weight: 700; }"
     },
     {
       "name": "Pestaña del riel",
@@ -86,10 +104,10 @@
       "css": ".ds-ticks { display: flex; gap: 3px; height: 16px; } .ds-ticks i { width: 3px; background: #262932; } .ds-ticks i.fill { background: #F2F3F5; }"
     },
     {
-      "name": "Caja grabada MÁX",
+      "name": "Caja grabada (MÁX / VL / campeón)",
       "kind": "custom",
       "refersTo": "mark-max",
-      "description": "Tope alcanzado: borde de tinta, mono 700, sin color de acción. Unificada en Desarrollo, Pilotos y Sede.",
+      "description": "El énfasis de dato del mundo: borde de tinta 1.5px, mono 700, sin color de acción. Unifica MÁX (hub), vuelta rápida (carrera) y temporada campeona (palmarés).",
       "html": "<span class=\"ds-mark-max\">MÁX</span>",
       "css": ".ds-mark-max { display: inline-block; font: 700 12.5px/1 ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace; letter-spacing: 0.14em; color: #F2F3F5; border: 1.5px solid #F2F3F5; padding: 6px 12px; }"
     },
@@ -105,43 +123,64 @@
       "name": "Input subrayado",
       "kind": "input",
       "refersTo": "input-underline",
-      "description": "Formulario desnudo: sin caja, solo subrayado hairline; el foco es el subrayado vivo en volt-línea.",
-      "html": "<label class=\"ds-field\">NOMBRE DEL EQUIPO<input class=\"ds-input\" value=\"ESCUDERÍA VEGA\" /></label>",
+      "description": "Formulario desnudo GLOBAL (acceso, partidas, hub): sin caja, solo subrayado hairline; el foco es el subrayado vivo en volt-línea.",
+      "html": "<label class=\"ds-field\">EMAIL<input class=\"ds-input\" value=\"rafa@example.com\" /></label>",
       "css": ".ds-field { display: grid; gap: 7px; font: 600 11px/1 Inter, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: #9BA0AA; } .ds-input { background: transparent; border: 0; border-bottom: 1px solid #262932; border-radius: 0; color: #F2F3F5; font: 400 14px/1 ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace; min-height: 40px; padding: 8px 2px; } .ds-input:focus-visible { outline: none; border-bottom: 2px solid #D6FF3F; }"
+    },
+    {
+      "name": "Fila de torre (jugador por materia)",
+      "kind": "custom",
+      "refersTo": "hud-tower",
+      "description": "La torre de tiempos de la carrera: posición mono, franja de equipo (dato), delta flecha+signo (semáfora asiste), anillo de goma. La fila del jugador lleva relleno tonal, jamás volt.",
+      "html": "<div class=\"ds-tower-row ds-player\"><span class=\"ds-pos\">14</span><span class=\"ds-stripe\" style=\"background:#e10600\"></span><span class=\"ds-code\">PIL</span><span class=\"ds-delta up\">▲+3</span><span class=\"ds-gap\">+0.0s</span></div>",
+      "css": ".ds-tower-row { display: grid; grid-template-columns: 1.9em 4px 3.2ch 2.4em 1fr 3.2em 4.2em; gap: 6px; align-items: center; padding: 5px 6px; font-size: 13px; color: #F2F3F5; } .ds-tower-row.ds-player { background: #1C1E23; } .ds-tower-row .ds-pos { font: 700 15px/1 ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace; } .ds-tower-row .ds-stripe { width: 4px; height: 1.6em; } .ds-tower-row .ds-code { font-weight: 700; letter-spacing: 0.04em; } .ds-tower-row .ds-delta { font: 700 11px/1 ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace; text-align: center; } .ds-tower-row .ds-delta.up { color: #3fb950; } .ds-tower-row .ds-gap { font-family: ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace; color: #9BA0AA; text-align: right; }"
+    },
+    {
+      "name": "Aviso (toast) del mundo",
+      "kind": "custom",
+      "refersTo": "notice-toast",
+      "description": "Panel enmarcado que flota sobre la rejilla con la sombra del mundo; el borde izquierdo lleva SEMÁFORA solo en alert/success.",
+      "html": "<div class=\"ds-notice ds-alert\"><div class=\"ds-notice-title\">Bandera roja</div><div class=\"ds-notice-body\">La carrera se detiene</div></div>",
+      "css": ".ds-notice { background: #141519; border: 1px solid #262932; border-left: 4px solid #9BA0AA; border-radius: 0; padding: 8px 12px; box-shadow: 4px 6px 18px rgba(0, 0, 0, 0.35); } .ds-notice.ds-alert { border-left-color: #da3633; } .ds-notice-title { font-size: 13px; font-weight: 700; color: #F2F3F5; } .ds-notice-body { font-size: 12px; color: #9BA0AA; margin-top: 2px; }"
     }
   ],
   "narrative": {
     "northStar": "La mesa de ingeniería de una escudería de noche",
-    "overview": "El hub de gestión («Mi Equipo») es el plano de trabajo de una fábrica de precisión: carbono mate sobre el que la rejilla de construcción (hairline de 16/80 px) nunca deja de verse, los datos siempre en blanco y monoespaciada tabular como en un plano técnico, y UN solo color de acción — el volt — que significa exactamente «aquí puedes actuar». La dirección rechaza expresamente el dashboard genérico oscuro+neón y las tarjetas iguales: la identidad es la rejilla y el bloque de título de plano técnico, no el adorno. La voz tipográfica viene de los pesos extremos de Inter (Black display, 600 labels) enfrentada a la cifra mono, no de cambiar de fuente. El volt es fijo: nunca se liga a la librea del jugador (la librea es un dato más, con su chip de color en la ficha) y nunca pinta datos, decoración ni estados informativos. Comprar deja huella: cada gasto muestra un chip delta junto al monedero durante 1600 ms. El movimiento existe solo a pasos (steps 90–140 ms) y todo él queda quieto con prefers-reduced-motion. Frontera: el mundo Carbono vive en src/team-screen.css (tokens --hub-*) y cubre solo el hub y su shell; login, slots, carrera, temporada y palmarés conservan src/ui.css y heredarán Carbono en fases posteriores.",
+    "overview": "El juego entero es el plano de trabajo de una fábrica de precisión: carbono mate sobre el que la rejilla de construcción (hairline de 16/80 px) nunca deja de verse, los datos siempre en tinta y monoespaciada tabular como en un plano técnico, y UN solo color de acción — el volt — que significa exactamente «aquí puedes actuar». La dirección rechaza expresamente el dashboard genérico oscuro+neón y las tarjetas iguales: la identidad es la rejilla y el bloque de título de plano técnico, no el adorno. La voz tipográfica viene de los pesos extremos de Inter (Black display, 600 labels) enfrentada a la cifra mono, no de cambiar de fuente. El volt es fijo: nunca se liga a la librea del jugador (la librea viaja por su canal de dato) y nunca pinta datos, decoración ni estados informativos. Comprar deja huella (chip delta 1600 ms) y el movimiento existe solo a pasos, quieto con prefers-reduced-motion. Frontera (spec 033): el mundo gobierna TODA la app — acceso, partidas, Mi Equipo, carrera (cromo; coches/gomas/luces/banderas son contenido), temporada, palmarés y las capas flotantes. Los tokens --hub-* viven en src/ui.css (nombres viejos = alias) y cada shell pinta la rejilla. Nada del incumbente queda en producción: radio, corte diagonal, acento dinámico de librea y Barlow Condensed retirados.",
     "keyCharacteristics": [
-      "Carbono mate (#0E0F11) con rejilla hairline 16/80 px visible en todo el shell; variante «papel» (#EDEFE9) en tema claro.",
-      "Datos SIEMPRE en blanco/tinta y monoespaciada tabular; la librea es un dato (chip), nunca vestuario.",
-      "Volt #D6FF3F reservado exclusivamente a acción/activo/foco; la única lámina volt del escritorio es la salida a carrera.",
-      "Módulos enmarcados a 1 px sobre la rejilla, esquinas rectas (radius 0), sin sombras salvo el menú desplegable.",
-      "Interacción firma: comprar = chip delta en el monedero (1600 ms) + un tick más; móvil ≤860 px con barra inferior solo-carrera y safe-area."
+      "Carbono mate (#0E0F11) con rejilla hairline 16/80 px visible en el shell de TODA la app (también alrededor del asfalto de la carrera); variante «papel» (#EDEFE9) en claro.",
+      "Datos SIEMPRE en tinta y mono tabular — posiciones de torre, vueltas, premios y totales incluidos (Barlow Condensed retirada); la librea es un dato con canal propio (--livery/--livery-line).",
+      "Volt #D6FF3F reservado exclusivamente a acción/activo/foco (botón primario, selector activo, anillo del compuesto elegido); semáfora verde/ámbar/rojo solo como significado con redundancia de forma/signo.",
+      "Módulos enmarcados a 1px sobre la rejilla, esquinas rectas (radio 0; excepciones: círculos-dato y el gantry físico de luces), sin sombras salvo lo que flota (menús, avisos, overlays).",
+      "Énfasis de dato por MATERIA o GRABADO: fila del jugador (relleno line-soft), P1 del podio, mis resultados, vuelta rápida (chip grabado), temporada campeona del palmarés.",
+      "Interacción firma del hub: comprar = chip delta (1600 ms) + un tick; móvil con la acción de carrera en barra inferior fija y safe-area."
     ],
     "rules": [
       { "name": "La Ley del Volt", "body": "El volt pinta únicamente acción, activo y foco. Jamás pinta datos, estados informativos ni decoración; jamás se liga a la librea. Si un elemento volt no responde al pulso, no es volt. La única lámina volt de gran tamaño del escritorio es el botón de salida a carrera: su rareza es el punto.", "section": "colors" },
-      { "name": "El Dato es Tinta", "body": "Toda cifra, nivel y medición va en tinta (#F2F3F5) sobre mono tabular. Los medidores son ticks de tinta; la fila del jugador en Campeonato se enfatiza con materia (--hub-line-soft), no con acción.", "section": "colors" },
+      { "name": "El Dato es Tinta", "body": "Toda cifra, nivel y medición va en tinta sobre mono tabular. Los medidores son ticks de tinta; el énfasis (fila del jugador en Campeonato y torre, P1 del podio, mis resultados, vuelta rápida, temporada campeona) es materia o grabado, jamás volt.", "section": "colors" },
+      { "name": "La Semáfora", "body": "Verde (éxito), ámbar (aviso) y rojo (peligro) existen SOLO como significado — avisos, desgaste, banderas, subidas/bajadas — y siempre con redundancia de forma o signo. Nunca decoran ni accionan. Los colores de compuesto y las banderas son contenido del deporte.", "section": "colors" },
+      { "name": "La Librea es un Dato", "body": "El color del equipo viaja por --livery (crudo) y --livery-line (mezcla al 55% hacia la tinta: una librea casi negra jamás esconde una línea del gráfico). Ningún elemento de interfaz lee la librea; el acento dinámico está retirado.", "section": "colors" },
       { "name": "La Cifra es Mono", "body": "Si es un número que el jugador compara o gasta, va en la pila mono con font-variant-numeric: tabular-nums. Inter nunca porta cifras del juego.", "section": "typography" },
-      { "name": "The Grid Stays On Rule", "body": "La rejilla de construcción se ve en TODO el shell del hub, bajo cualquier tema. Ninguna superficie del mundo Carbono puede taparla con un fondo opaco salvo el mástil, la barra móvil y los menús desplegables (que flotan sobre él).", "section": "layout" },
-      { "name": "La Mesa Plana", "body": "Nada se levanta del plano con sombra para pedir atención; la atención la da el volt. Si un elemento parece necesitar elevación, es que no debería competir con la acción.", "section": "elevation" }
+      { "name": "The Grid Stays On Rule", "body": "La rejilla de construcción se ve en el shell de TODA la app, bajo cualquier tema. Ninguna superficie del mundo puede taparla con un fondo opaco salvo mástiles, barra móvil y lo que flota (menús, avisos, overlays). El canvas de la carrera es transparente: la trama se ve alrededor del asfalto.", "section": "layout" },
+      { "name": "La Mesa Plana", "body": "Nada se levanta del plano con sombra para pedir atención; la atención la da el volt. Las capas que FLOTAN (menús, avisos, overlays de resultados/gomas/presentación, bandera) sí llevan la caída única del mundo: existen por encima del plano.", "section": "elevation" }
     ],
     "dos": [
-      "Do mantener la rejilla 16/80 px visible en todo el shell; los módulos se enmarcan a 1 px SOBRE ella, no la tapan.",
-      "Do pintar toda cifra, nivel y referencia de ronda en mono tabular (tabular-nums), en tinta.",
+      "Do mantener la rejilla 16/80 px visible en el shell de cada pantalla; los módulos se enmarcan a 1px SOBRE ella, no la tapan.",
+      "Do pintar toda cifra, nivel, posición, diferencia y referencia de ronda en mono tabular, en tinta.",
       "Do dejar chip delta de 1600 ms en el monedero tras cada gasto o ingreso.",
-      "Do usar los pesos extremos de Inter (900 display, 800 títulos, 600 labels) como voz; la fuente no cambia para expresar.",
-      "Do mantener objetivos táctiles ≥44 px y, en móvil, la acción de carrera en barra inferior fija con env(safe-area-inset-bottom).",
+      "Do usar los pesos extremos de Inter (900 display/wordmark, 800 títulos, 600 labels) como voz; la fuente no cambia para expresar.",
+      "Do mantener objetivos táctiles ≥44px (excepción documentada: tira compacta de velocidades) y safe-area en barras móviles.",
       "Do gatear todo movimiento tras prefers-reduced-motion: no-preference y hacerlo a pasos (90–140 ms), nunca como deslizamiento.",
-      "Do en tema claro, oscurecer el volt de líneas y foco (#7D9000) manteniendo el volt de fondo como luz (#CDF630)."
+      "Do en tema claro, oscurecer el volt de líneas y foco (#7D9000) manteniendo el volt de fondo como luz (#CDF630).",
+      "Do marcar el énfasis de datos con materia (relleno tonal) o grabado (borde de tinta 1.5px), nunca con volt."
     ],
     "donts": [
       "Don't uses volt para datos, estados informativos, decoración o acentos ligados a la librea del jugador (La Ley del Volt).",
-      "Don't redondees esquinas: border-radius: 0 en todo el mundo (única excepción: el punto-librea de rivales, que es un dato).",
-      "Don't añadas sombras para jerarquía; la única del mundo es la caída del menú desplegable.",
+      "Don't redondees esquinas: border-radius: 0 en todo el mundo (excepciones: círculos-dato —librea/tcolor/anillos de goma— y el gantry físico de luces).",
+      "Don't añadas sombras para jerarquía; la única familia es la caída de lo que flota.",
       "Don't pintes cifras del juego en Inter ni fills de medidor en volt; los ticks llenos son tinta.",
-      "Don't documentes ni estiles desde aquí las pantallas aún no migradas (login, slots, carrera, temporada, palmarés): siguen en src/ui.css y heredarán Carbono en fases posteriores."
+      "Don't reintroduzcas el acento dinámico de librea, la Barlow Condensed, radios o cortes diagonales del look anterior: retirados de producción.",
+      "Don't uses la semáfora sin significado ni sin redundancia de forma/signo."
     ]
   }
 }

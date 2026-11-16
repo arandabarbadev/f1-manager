@@ -60,7 +60,7 @@ export function createSeasonScreen(container: HTMLElement, onExit: () => void): 
   main.className = 'season-main';
 
   const card = document.createElement('section');
-  card.className = 'card cut'; // spec 020
+  card.className = 'card'; // spec 020
 
   const list = document.createElement('div');
   list.className = 'season-list';
@@ -117,7 +117,7 @@ export function createSeasonScreen(container: HTMLElement, onExit: () => void): 
   let rivalsCard: HTMLElement | null = null;
   if (rivalGains.length > 0) {
     rivalsCard = document.createElement('section');
-    rivalsCard.className = 'card cut rival-growth';
+    rivalsCard.className = 'card rival-growth';
     const top = [...rivalGains].sort((a, b) => b.gain - a.gain).slice(0, 3);
     rivalsCard.innerHTML = `
       <h2>Los rivales no se duermen</h2>

@@ -58,7 +58,7 @@ export function createSlotsScreen(container: HTMLElement, onPlay: () => void): v
       const summary = slotSummary(slot);
       const card = document.createElement('section');
       card.className =
-        'slot-card cut' + (exists ? '' : ' empty') + (slot === active ? ' active' : '');
+        'slot-card' + (exists ? '' : ' empty') + (slot === active ? ' active' : '');
 
       const head = document.createElement('div');
       head.className = 'slot-head';

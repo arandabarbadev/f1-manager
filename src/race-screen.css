@@ -1,8 +1,12 @@
 @import './ui.css';
 
 /* ============================================================
-   RACE SCREEN — dark pit-wall theme (light via CSS variables),
-   desktop + mobile
+   RACE SCREEN — el fin de semana sobre el carbón (spec 033).
+   El cromo viste el mundo (rejilla bajo el trazado, hairlines,
+   cifras en mono, MI fila por materia, activo y confirmar en
+   volt); la carrera es CONTENIDO y queda intacta: coches con su
+   color de equipo, gomas por anillo+letra, luces de salida,
+   banderas y desgaste con su semáfora (siempre con forma/signo).
    ============================================================ */
 
 .race-screen {
@@ -10,9 +14,13 @@
   flex-direction: column;
   height: 100vh;
   position: relative; /* spec 024: anchors the full-screen overlays */
-  color: var(--text);
-  font-family: var(--font-ui); /* spec 019 */
-  background: var(--bg);
+  color: var(--hub-text);
+  font-family: var(--font-ui);
+  background-color: var(--hub-bg);
+  /* La rejilla de construcción se ve alrededor del asfalto: el
+     canvas es transparente y solo traza halo + ribbon. */
+  background-image: var(--hub-grid-image);
+  background-size: var(--hub-grid-size);
 }
 
 .race-header {
@@ -21,8 +29,8 @@
   gap: 8px 16px;
   align-items: center;
   padding: 10px 14px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  background: var(--hub-mast-bg);
+  border-bottom: 1px solid var(--hub-line);
 }
 
 /* Spec 020: the info bar leads — circuit, BIG lap counter, weather
@@ -37,25 +45,31 @@
 }
 
 .race-name {
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* The lap count is the big number of the broadcast. */
+/* The lap count is the big number of the broadcast — a FIGURE:
+   mono, ink (La Cifra es Mono). */
 .race-lap {
-  font-family: var(--font-display);
+  font-family: var(--hub-mono);
   font-size: 22px;
   font-weight: 700;
-  color: var(--accent-text);
+  color: var(--hub-text);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 .race-weather,
 .race-clock {
-  color: var(--dim);
+  color: var(--hub-dim);
+  font-family: var(--hub-mono);
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -68,12 +82,13 @@
 }
 
 /* Spec 020: pause + speeds form ONE compact selector, apart from the
-   information (they must not compete with it). */
+   information (they must not compete with it). The ACTIVE speed is
+   an action state: the volt sheet (Ley del Volt). */
 .speed-group {
   display: flex;
-  background: var(--btn-bg);
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-touch);
+  background: transparent;
+  border: 1px solid var(--hub-line);
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -83,20 +98,25 @@
   min-height: 30px;
   padding: 4px 10px;
   font-size: 12px;
+  font-family: var(--hub-mono);
   background: transparent;
+  color: var(--hub-text);
 }
 
 .speed-group .btn:hover:not(:disabled) {
-  background: var(--btn-hover);
+  background: var(--hub-line-soft);
+  border-color: none;
 }
 
 .speed-group .btn.active {
-  background: var(--accent);
-  color: var(--accent-contrast);
+  background: var(--hub-action);
+  border-color: none;
+  color: var(--hub-action-ink);
+  font-weight: 700;
 }
 
 .speed-group .btn + .btn {
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--hub-line);
 }
 
 .race-body {
@@ -130,7 +150,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  background: color-mix(in srgb, var(--hub-bg) 72%, transparent);
   padding: 16px;
 }
 
@@ -138,12 +158,13 @@
   display: none;
 }
 
+/* Floating panel over the grid: framed module + the world's drop. */
 .results-panel {
-  background: var(--panel);
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-data);
+  background: var(--hub-panel);
+  border: 1px solid var(--hub-line);
+  border-radius: 0;
   width: min(92vw, 380px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 4px 6px 18px rgba(0, 0, 0, 0.35);
   /* Spec 022: podium + list can outgrow a phone screen; the actions
      stay reachable with the thumb at the end of the scroll. */
   max-height: min(92vh, 660px);
@@ -156,8 +177,17 @@
   padding: 18px 20px 0;
 }
 
+.results-panel h2 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
 /* Spec 022: broadcast podium (P2 — P1 — P3, winner tallest) + the
-   player's cars always in big. */
+   player's cars always in big. P1 and mine are MATTER (tonal fill,
+   stronger border), never the action color. */
 .podium {
   display: flex;
   align-items: flex-end;
@@ -174,38 +204,40 @@
   align-items: center;
   gap: 2px;
   padding: 8px 6px;
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-data);
+  background: transparent;
+  border: 1px solid var(--hub-line-soft);
+  border-radius: 0;
 }
 
 .podium-slot.p1 {
   padding-bottom: 20px;
-  background: var(--accent-bg);
-  border-color: var(--accent-bg-border);
+  background: var(--hub-line-soft);
+  border-color: var(--hub-dim);
 }
 
 .podium-slot.mine {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
+  background: var(--hub-line-soft);
+  border-color: var(--hub-text);
 }
 
 .podium-pos {
-  font-family: var(--font-display);
+  font-family: var(--hub-mono);
   font-size: 22px;
   font-weight: 700;
-  color: var(--accent-text);
+  color: var(--hub-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .podium-code {
   font-weight: 700;
   font-size: 13px;
+  letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
 .podium-name {
   font-size: 11px;
-  color: var(--dim);
+  color: var(--hub-dim);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -213,9 +245,9 @@
 }
 
 .podium-team {
-  font-size: 10px;
-  color: var(--dim);
-  border-top: 3px solid var(--dim);
+  font-size: 11px;
+  color: var(--hub-dim);
+  border-top: 3px solid var(--hub-dim);
   padding-top: 2px;
   max-width: 100%;
   overflow: hidden;
@@ -235,16 +267,17 @@
   align-items: baseline;
   gap: 8px;
   padding: 8px 10px;
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-bg-border);
-  border-radius: var(--radius-data);
+  background: var(--hub-line-soft);
+  border: 1px solid var(--hub-line);
+  border-radius: 0;
 }
 
 .my-result .my-pos {
-  font-family: var(--font-display);
+  font-family: var(--hub-mono);
   font-size: 24px;
   font-weight: 700;
-  color: var(--accent-text);
+  color: var(--hub-text);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -256,28 +289,25 @@
   white-space: nowrap;
 }
 
-.results-panel h2 {
-  margin: 0 0 12px;
-  font-size: 18px;
-}
-
 .result-row {
   display: grid;
   grid-template-columns: 2.8em 1fr auto;
   gap: 10px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--hub-line-soft);
+  font-size: 13.5px;
   align-items: center;
 }
 
 .result-pos {
-  color: var(--accent-text);
+  color: var(--hub-text);
+  font-family: var(--hub-mono);
   font-weight: 700;
 }
 
 .result-prize {
-  color: var(--green-text);
+  color: var(--hub-text);
+  font-family: var(--hub-mono);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -286,7 +316,9 @@
   margin: 12px 0;
   font-size: 15px;
   font-weight: 700;
-  color: var(--accent-text);
+  color: var(--hub-text);
+  font-family: var(--hub-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Spec 024: pinned at the end of the scrolling panel — the actions
@@ -299,8 +331,8 @@
   flex-wrap: wrap;
   margin: 14px -20px 0;
   padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
-  background: var(--panel);
-  border-top: 1px solid var(--border);
+  background: var(--hub-panel);
+  border-top: 1px solid var(--hub-line);
 }
 
 .results-actions .btn {
@@ -310,11 +342,12 @@
 
 /* Spec 028: post-race pace chart (own SVG, no libraries). Full panel
    width — readable on a phone without side scrolling. The two cars
-   share the team color: shape tells them apart (solid+● vs dashed+■). */
+   share the LIVERY (data channel): the line variant keeps a dark
+   livery visible, and shape still tells them apart (solid+● vs
+   dashed+■). */
 .chart-toggle {
   width: 100%;
   margin: 8px 0 2px;
-  min-height: 36px;
 }
 
 .pace-chart {
@@ -329,25 +362,26 @@
   width: 100%;
   height: auto;
   display: block;
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-data);
+  background: var(--hub-bg);
+  border: 1px solid var(--hub-line);
+  border-radius: 0;
 }
 
 .pc-grid {
-  stroke: var(--border);
+  stroke: var(--hub-line);
   stroke-width: 1;
 }
 
 .pc-tick {
-  fill: var(--dim);
+  fill: var(--hub-dim);
   font-size: 9px;
+  font-family: var(--hub-mono);
   font-variant-numeric: tabular-nums;
 }
 
 .pc-line {
   fill: none;
-  stroke: var(--accent);
+  stroke: var(--livery-line);
   stroke-width: 2;
   stroke-linejoin: round;
 }
@@ -357,19 +391,20 @@
 }
 
 .pc-dot {
-  fill: var(--accent);
+  fill: var(--livery-line);
 }
 
 .pc-dot.marked {
-  fill: var(--panel);
-  stroke: var(--accent);
+  fill: var(--hub-panel);
+  stroke: var(--livery-line);
   stroke-width: 1.5;
 }
 
 .pc-note {
-  fill: var(--accent-text);
+  fill: var(--hub-dim);
   font-size: 8.5px;
   font-weight: 700;
+  font-family: var(--hub-mono);
 }
 
 .pc-legend {
@@ -377,7 +412,8 @@
   gap: 14px;
   flex-wrap: wrap;
   font-size: 11px;
-  color: var(--dim);
+  font-family: var(--hub-mono);
+  color: var(--hub-dim);
   margin: 4px 0 6px;
 }
 
@@ -385,7 +421,7 @@
   display: inline-block;
   width: 18px;
   height: 0;
-  border-top: 2px solid var(--accent);
+  border-top: 2px solid var(--livery-line);
   vertical-align: middle;
   margin-right: 5px;
 }
@@ -394,31 +430,36 @@
   border-top-style: dashed;
 }
 
+/* La torre de tiempos: instrumento sobre carbón, hairline propia. */
 .hud {
   width: 340px;
   overflow-y: auto;
-  background: var(--panel-2);
-  border-left: 1px solid var(--border);
+  background: var(--hub-panel);
+  border-left: 1px solid var(--hub-line);
   padding: 10px 12px;
   box-sizing: border-box;
 }
 
 .hud-title {
-  font-size: 12px;
-  color: var(--dim);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hub-dim);
   margin: 10px 0 6px;
 }
 
 .pit-box {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-data);
+  background: transparent;
+  border: 1px solid var(--hub-line);
+  border-radius: 0;
   padding: 8px 10px;
   margin-bottom: 8px;
 }
 
 .pit-name {
   font-size: 13px;
+  font-weight: 600;
   margin-bottom: 6px;
 }
 
@@ -443,7 +484,8 @@
 
 .pit-pos {
   font-weight: 700;
-  color: var(--accent-text);
+  font-family: var(--hub-mono);
+  color: var(--hub-text);
   min-width: 2.4em;
   white-space: nowrap;
 }
@@ -476,13 +518,14 @@
   min-width: 3.2em;
   text-align: right;
   font-size: 12px;
-  color: var(--dim);
+  font-family: var(--hub-mono);
+  color: var(--hub-dim);
   font-variant-numeric: tabular-nums;
 }
 
 .pit-status {
   font-size: 12px;
-  color: var(--dim);
+  color: var(--hub-dim);
   margin-top: 6px;
 }
 
@@ -494,29 +537,29 @@
 
 /* Spec 020/022: timing-tower row — [position][team stripe][3-letter
    code][gained/lost][gap][tyre ring][wear][pit flag]. Full name on
-   the tooltip. */
+   the tooltip. My row is MATTER: tonal fill, like the hub tables. */
 .standing-row {
   display: grid;
-  grid-template-columns: 1.9em 4px 3.2ch 2.4em 1fr 20px 3.4em 2.6em;
+  grid-template-columns: 1.9em 4px 3.2ch 2.4em 1fr 20px 3.2em 4.2em;
   gap: 6px;
   align-items: center;
   padding: 5px 6px;
-  border-radius: var(--radius-data);
+  border-radius: 0;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
 .standing-row.player {
-  background: var(--accent-bg);
+  background: var(--hub-line-soft);
 }
 
-/* Spec 019: THE one display-font moment — the position numbers of
-   the live standings, timing-tower style. */
+/* Broadcast position numbers: mono figures (the condensed display
+   font retired with the old world — 033 R4). */
 .standing-row .pos {
-  font-family: var(--font-display);
+  font-family: var(--hub-mono);
   font-size: 15px;
   font-weight: 700;
-  color: var(--text);
+  color: var(--hub-text);
 }
 
 .standing-row .stripe {
@@ -535,8 +578,9 @@
 /* Spec 022: gained/lost places vs the grid — arrow + sign (the shape
    carries the meaning, color only assists). Empty when unchanged. */
 .delta {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
+  font-family: var(--hub-mono);
   white-space: nowrap;
   text-align: center;
 }
@@ -546,24 +590,27 @@
 }
 
 .delta.down {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 /* Race number (spec 008): bold so the car is identifiable without
    team colors. */
 .standing-row .num {
   font-weight: 700;
+  font-family: var(--hub-mono);
   text-align: right;
 }
 
-/* Spec 023: fastest lap — the holder's code is underlined with the
-   team accent in the tower, and the time rides above the tower. */
+/* Spec 023: fastest lap — the holder's code is underlined with ink
+   in the tower (a datum distinction, not action), and the time
+   rides above the tower in an ENGRAVED chip (lenguaje MÁX). */
 .fastest-lap {
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-bg-border);
-  border-radius: var(--radius-data);
-  color: var(--accent-text);
-  font-size: 12px;
+  background: transparent;
+  border: 1.5px solid var(--hub-text);
+  border-radius: 0;
+  color: var(--hub-text);
+  font-family: var(--hub-mono);
+  font-size: 11.5px;
   font-weight: 700;
   padding: 3px 8px;
   margin: 0 0 6px;
@@ -578,15 +625,16 @@
 }
 
 .standing-row.vl .code {
-  color: var(--accent-text);
-  box-shadow: inset 0 -2px 0 var(--accent);
+  color: var(--hub-text);
+  box-shadow: inset 0 -2px 0 var(--hub-text);
 }
 
 /* Fastest lap in the final results panel. */
 .results-fl {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--accent-text);
+  font-family: var(--hub-mono);
+  color: var(--hub-text);
   margin: 0 0 8px;
   font-variant-numeric: tabular-nums;
 }
@@ -596,15 +644,17 @@
 }
 
 .gap {
-  color: var(--dim);
+  color: var(--hub-dim);
+  font-family: var(--hub-mono);
+  font-size: inherit;
   text-align: right;
   white-space: nowrap;
 }
 
 .wear {
   height: 8px;
-  background: var(--border);
-  border-radius: var(--radius-data);
+  background: var(--hub-line-soft);
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -646,11 +696,13 @@
 }
 
 .standing-row.dnf .gap {
-  color: var(--red);
+  color: var(--red-text);
   font-weight: 700;
 }
 
-/* Start lights (spec 012): F1 gantry, 5 red lights */
+/* Start lights (spec 012): F1 gantry — a PHYSICAL object, the one
+   radius exception of the world (documented in DESIGN.md). Its red
+   is the sport's own light, not interface color. */
 .start-lights {
   position: absolute;
   top: 14%;
@@ -661,12 +713,10 @@
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  /* Physical gantry, not a data card: keeps a small radius
-     (spec 019 exception). */
   border-radius: 4px;
-  background: color-mix(in srgb, var(--panel) 88%, #000 12%);
-  border: 1px solid var(--border-2);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  background: color-mix(in srgb, var(--hub-panel) 88%, #000 12%);
+  border: 1px solid var(--hub-line);
+  box-shadow: 4px 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .start-lights.hidden {
@@ -682,8 +732,8 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--border);
-  border: 2px solid var(--border-2);
+  background: var(--hub-line-soft);
+  border: 2px solid var(--hub-line);
   transition: background 120ms ease, box-shadow 120ms ease;
 }
 
@@ -694,15 +744,15 @@
 }
 
 .start-lights.out .light.on {
-  background: var(--border);
-  border-color: var(--border-2);
+  background: var(--hub-line-soft);
+  border-color: var(--hub-line);
   box-shadow: none;
 }
 
 .lights-label {
   font-size: 12px;
   font-weight: 700;
-  color: var(--dim);
+  color: var(--hub-dim);
 }
 
 .start-lights.out .lights-label {
@@ -719,7 +769,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--bg) 60%, transparent);
+  background: color-mix(in srgb, var(--hub-bg) 60%, transparent);
   cursor: pointer;
 }
 
@@ -728,24 +778,29 @@
 }
 
 .gp-intro-card {
-  background: var(--panel);
-  border: 1px solid var(--accent-bg-border);
+  background: var(--hub-panel);
+  border: 1px solid var(--hub-line);
+  border-radius: 0;
   padding: 16px 22px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.5));
+  box-shadow: 4px 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .gp-intro-name {
   margin: 0;
-  font-size: 18px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .gp-intro-laps {
-  color: var(--dim);
+  color: var(--hub-dim);
   font-size: 13px;
+  font-family: var(--hub-mono);
 }
 
 .gp-intro-map {
@@ -753,7 +808,7 @@
 }
 
 .gp-intro-hint {
-  color: var(--dim);
+  color: var(--hub-dim);
   font-size: 11px;
 }
 
@@ -767,7 +822,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  background: color-mix(in srgb, var(--hub-bg) 72%, transparent);
   padding: 16px;
 }
 
@@ -776,18 +831,21 @@
 }
 
 .tyre-pick-card {
-  background: var(--panel);
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-data);
+  background: var(--hub-panel);
+  border: 1px solid var(--hub-line);
+  border-radius: 0;
   width: min(92vw, 380px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 4px 6px 18px rgba(0, 0, 0, 0.35);
   box-sizing: border-box;
   padding: 18px 20px;
 }
 
 .tp-title {
   margin: 0 0 10px;
-  font-size: 18px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .tp-row {
@@ -795,12 +853,13 @@
   align-items: center;
   gap: 10px;
   padding: 10px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--hub-line-soft);
 }
 
 .tp-pos {
-  font-family: var(--font-display); /* broadcast numerals (podium/tower) */
+  font-family: var(--hub-mono);
   font-size: 20px;
+  font-weight: 700;
   min-width: 2em;
   flex: none;
 }
@@ -821,7 +880,7 @@
 .tp-driver em {
   font-style: normal;
   font-size: 11px;
-  color: var(--dim);
+  color: var(--hub-dim);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -833,17 +892,23 @@
   flex: none;
 }
 
+/* Compound pickers: square, hairline; the chosen compound wears the
+   volt ring (an ACTIVE choice is an action state). */
 .tp-btn {
   width: 44px;
   height: 44px;
-  border-radius: var(--radius-touch);
-  border: 1px solid var(--border-2);
-  background: var(--btn-bg);
+  border-radius: 0;
+  border: 1px solid var(--hub-line);
+  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   padding: 0;
+}
+
+.tp-btn:hover {
+  border-color: var(--hub-dim);
 }
 
 .tp-btn .tyre-ico {
@@ -853,15 +918,14 @@
 }
 
 .tp-btn.active {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 18%, var(--panel));
-  box-shadow: 0 0 0 1px var(--accent);
+  border-color: var(--hub-action);
+  box-shadow: 0 0 0 1px var(--hub-action);
+  background: var(--hub-line-soft);
 }
 
 .tp-go {
   width: 100%;
   margin-top: 14px;
-  min-height: 44px;
 }
 
 /* Race control feed (spec 012): last events under the standings */
@@ -874,9 +938,9 @@
 .feed-item {
   font-size: 12px;
   padding: 3px 6px 3px 16px;
-  border-radius: var(--radius-data);
+  border-radius: 0;
   position: relative;
-  color: var(--text);
+  color: var(--hub-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -891,7 +955,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--dim);
+  background: var(--hub-dim);
 }
 
 .feed-item.incident::before {
@@ -907,23 +971,24 @@
 }
 
 .feed-item.incident {
-  color: var(--red);
+  color: var(--red-text);
   font-weight: 700;
 }
 
-/* Race control flag indicator (top-left over the track) */
+/* Race control flag indicator (top-left over the track) — the
+   flag's color is the sport's own meaning. */
 .flag-indicator {
   position: absolute;
   top: 12px;
   left: 12px;
   padding: 8px 14px;
-  border-radius: var(--radius-data);
+  border-radius: 0;
   font-weight: 700;
   font-size: 14px;
-  border: 1px solid var(--border-2);
-  background: var(--panel);
-  color: var(--text);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--hub-line);
+  background: var(--hub-panel);
+  color: var(--hub-text);
+  box-shadow: 4px 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .flag-indicator.red {
@@ -942,10 +1007,10 @@
   font-size: 16px;
 }
 
-/* Post-race finance breakdown */
+/* Post-race finance breakdown — figures in ink mono. */
 .finance-list {
   margin-top: 10px;
-  border-top: 1px dashed var(--border-2);
+  border-top: 1px solid var(--hub-line);
   padding-top: 8px;
 }
 
@@ -953,18 +1018,20 @@
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 13px;
+  font-size: 12.5px;
   padding: 3px 0;
-  color: var(--dim);
+  color: var(--hub-dim);
 }
 
 .finance-row strong {
-  color: var(--text);
+  color: var(--hub-text);
+  font-family: var(--hub-mono);
   font-variant-numeric: tabular-nums;
 }
 
 .finance-row:last-child strong {
-  color: var(--green-text);
+  color: var(--hub-text);
+  font-weight: 700;
 }
 
 @media (max-width: 720px) {
@@ -972,17 +1039,17 @@
     flex-direction: column;
   }
 
-  /* Compact race UI on phones: smaller controls, more track and
-     standings visible in the vertical layout. */
+  /* Compact race UI on phones: more track and standings visible in
+     the vertical layout. Header actions keep the 44px floor (they
+     are primary thumb controls); ONLY the speed strip is compact —
+     the world's documented exception (DESIGN.md touch-exception). */
   .race-header {
     padding: 6px 8px;
     gap: 4px 8px;
   }
 
-  .race-header .btn {
-    padding: 5px 8px;
-    font-size: 12px;
-    min-height: 30px;
+  .race-header > .race-controls .btn:not(.speed-group .btn) {
+    padding: 8px 12px;
   }
 
   .race-name {
@@ -1012,13 +1079,13 @@
     width: auto;
     flex: 1;
     border-left: none;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--hub-line);
     padding: 6px 8px;
   }
 
   .hud-title {
     margin: 6px 0 4px;
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .pit-box {
@@ -1040,7 +1107,7 @@
     font-size: 11px;
     padding: 3px 4px;
     gap: 4px;
-    grid-template-columns: 1.6em 3px 2.6ch 1.8em 1fr 16px 2.6em 2em;
+    grid-template-columns: 1.6em 3px 2.6ch 2em 1fr 16px 2.2em 4em;
   }
 
   .standing-row .pos {
@@ -1066,7 +1133,7 @@
   }
 
   .standing-row .pitflag {
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .wear {

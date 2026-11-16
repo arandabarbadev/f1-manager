@@ -1,6 +1,6 @@
 ---
-name: Motorsport Manager — Hub «Carbono»
-description: La mesa de ingeniería de una escudería de noche: rejilla de construcción siempre visible, datos en mono tabular y un único volt reservado a la acción.
+name: Motorsport Manager — «Carbono» (toda la app)
+description: La mesa de ingeniería de una escudería de noche: rejilla de construcción siempre visible en cada pantalla, datos en mono tabular y un único volt reservado a la acción.
 colors:
   carbon-ground: "#0E0F11"
   carbon-panel: "#141519"
@@ -20,6 +20,15 @@ colors:
   paper-ink-dim: "#5B6068"
   paper-volt: "#CDF630"
   volt-deep-line: "#7D9000"
+  signal-green: "#2ea043 / #1a7f37 (claro)"
+  signal-amber: "#d29922 / #9a6700 (claro)"
+  signal-red: "#da3633 / #cf222e (claro)"
+  track-asphalt: "#33353a / #d7d9dc (claro)"
+  tyre-soft: "#ff2e1f"
+  tyre-medium: "#ffd12e"
+  tyre-hard: "#f2f3f4"
+  tyre-inter: "#37c856"
+  tyre-wet: "#2aa8e8"
 typography:
   display:
     fontFamily: "Inter, system-ui, 'Segoe UI', sans-serif"
@@ -27,6 +36,12 @@ typography:
     fontWeight: 900
     lineHeight: 0.98
     letterSpacing: "-0.025em"
+  wordmark:
+    fontFamily: "Inter, system-ui, 'Segoe UI', sans-serif"
+    fontSize: "15px"
+    fontWeight: 900
+    letterSpacing: "-0.01em"
+    transform: "uppercase"
   title:
     fontFamily: "Inter, system-ui, 'Segoe UI', sans-serif"
     fontSize: "13px"
@@ -34,9 +49,9 @@ typography:
     letterSpacing: "0.16em"
   label:
     fontFamily: "Inter, system-ui, 'Segoe UI', sans-serif"
-    fontSize: "12px"
+    fontSize: "11-12px"
     fontWeight: 600
-    letterSpacing: "0.1em"
+    letterSpacing: "0.1-0.14em"
   body:
     fontFamily: "Inter, system-ui, 'Segoe UI', sans-serif"
     fontSize: "13.5px"
@@ -44,10 +59,20 @@ typography:
     letterSpacing: "0.02em"
   data:
     fontFamily: "ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, 'Roboto Mono', monospace"
-    fontSize: "13px"
+    fontSize: "12-15px"
     fontVariation: "tabular-nums"
+  data-broadcast:
+    fontFamily: "same mono stack"
+    fontSize: "22-24px"
+    fontWeight: 700
+    note: "vuelta del header, P# del podio y de mis resultados"
+  data-micro:
+    fontFamily: "same mono stack"
+    fontSize: "8.5-11px"
+    note: "SOLO dentro del viewBox del gráfico de ritmo (320→~420px: se renderiza ≥11px efectivos)"
 rounded:
   none: "0px"
+  exceptions: "punto-librea/tcolor (12px círculo), anillos de goma, gantry físico de luces (4px)"
 spacing:
   grid-minor: "16px"
   grid-major: "80px"
@@ -56,6 +81,10 @@ spacing:
   gap-md: "18px"
   gap-lg: "20px"
   touch-min: "44px"
+  touch-exception: "tira compacta de velocidades 1x-20x (secundaria, documentada)"
+shadows:
+  floating: "4px 6px 18px rgba(0,0,0,0.35)"
+  scope: "solo superficies que FLOTAN sobre la rejilla: menú Más, avisos (toasts), guía de primera vez, overlays de resultados/gomas/presentación, bandera"
 components:
   button-ghost:
     backgroundColor: "transparent"
@@ -110,21 +139,37 @@ components:
     rounded: "{rounded.none}"
     height: "40px"
     typography: "{typography.data}"
+  auth-card:
+    note: "módulo enmarcado centrado sobre la rejilla; wordmark Inter 900"
+  slot-module:
+    note: "módulo enmarcado por slot; chip A/B/C cuadrado mono; la activa por MATERIA (relleno --hub-line-soft + borde fuerte); dificultad = selector con activo volt"
+  season-rows:
+    note: "filas de ronda sobre hairline suave; P#/premio en mono tinta; UN botón primario (Empezar temporada nueva)"
+  palmares-totals:
+    note: "tres baldosas hairline con cifra grande mono; temporada campeona GRABADA (borde 1.5px tinta + relleno tonal, lenguaje MÁX)"
+  hud-tower:
+    note: "panel sólido con hairline izquierda; títulos de sección 11px 800; posiciones mono; fila del jugador por MATERIA (relleno line-soft); VL = chip grabado"
+  results-panel:
+    note: "módulo enmarcado + sombra de flotante; podio P1/míos por materia; premios mono tinta; acciones sticky ≥44px"
+  tyre-picker:
+    note: "botones cuadrados 44px; el compuesto elegido lleva ANILLO volt (estado activo)"
+  notice-toast:
+    note: "panel enmarcado + sombra flotante; borde izquierdo semántico SOLO en alert/success"
 ---
 
-# Design System: Motorsport Manager — Hub «Carbono»
+# Design System: Motorsport Manager — «Carbono» (toda la app)
 
 ## Overview
 
 **Creative North Star: "La mesa de ingeniería de una escudería de noche"**
 
-El hub de gestión («Mi Equipo») es el plano de trabajo de una fábrica de precisión: carbono mate sobre el que la rejilla de construcción (hairline de 16/80 px) nunca deja de verse, los datos siempre en blanco y monoespaciada tabular como en un plano técnico, y UN solo color de acción — el volt — que significa exactamente «aquí puedes actuar». La dirección rechaza expresamente el dashboard genérico oscuro+neón y las tarjetas iguales: la identidad es la rejilla y el bloque de título de plano técnico, no el adorno. La voz tipográfica viene de los pesos extremos de Inter (Black display, 600 labels) enfrentada a la cifra mono, no de cambiar de fuente.
+El juego entero es el plano de trabajo de una fábrica de precisión: carbono mate sobre el que la rejilla de construcción (hairline de 16/80 px) nunca deja de verse, los datos siempre en tinta y monoespaciada tabular como en un plano técnico, y UN solo color de acción — el volt — que significa exactamente «aquí puedes actuar». La dirección rechaza expresamente el dashboard genérico oscuro+neón y las tarjetas iguales: la identidad es la rejilla y el bloque de título de plano técnico, no el adorno. La voz tipográfica viene de los pesos extremos de Inter (Black display, 600 labels) enfrentada a la cifra mono, no de cambiar de fuente.
 
-El volt es fijo: nunca se liga a la librea del jugador (la librea es un dato más, con su chip de color en la ficha) y nunca pinta datos, decoración ni estados informativos. Comprar deja huella: cada gasto muestra un chip delta junto al monedero durante 1600 ms. El movimiento existe solo a pasos (steps 90–140 ms) y todo él queda quieto con `prefers-reduced-motion`.
+El volt es fijo: nunca se liga a la librea del jugador (la librea es un dato con su propio canal) y nunca pinta datos, decoración ni estados informativos. Comprar deja huella: cada gasto muestra un chip delta junto al monedero durante 1600 ms. El movimiento existe solo a pasos (steps 90–140 ms) y todo él queda quieto con `prefers-reduced-motion`.
 
-**Frontera de este sistema:** el mundo Carbono vive entero en `src/team-screen.css` con tokens `--hub-*` y se aplica solo al hub y su shell (`src/team-screen.ts`). El resto del juego (login, slots, carrera, resumen de temporada, palmarés) conserva el look incumbente de `src/ui.css` y heredará Carbono en fases posteriores; no forme parte de este sistema hasta que su fase lo migre.
+**Frontera de este sistema (spec 033):** el mundo gobierna TODA la app — acceso, partidas, Mi Equipo, carrera (su cromo; los coches, gomas, luces y banderas son contenido del deporte), resumen de temporada y palmarés, más las capas flotantes (resultados, elección de gomas, presentación del GP, avisos, guía). La capa de tokens `--hub-*` vive en `src/ui.css` (los nombres viejos `--bg/--panel/--border…` son alias del mundo) y cada pantalla pinta la rejilla en su shell. El hub la estrenó (032); nada del incumbente (radio, corte diagonal, acento dinámico de librea, Barlow Condensed) queda en producción.
 
-**Procedencia de las capturas embarcadas:** `specs/032-direccion-carbono/evidence/*.png` (7 capturas del juego real, dark/light escritorio, compra con delta, tall 390×2400, móvil 390×844, MÁX en Pilotos y en Sede), con el método de producción documentado en la tabla «Evidencias a entregar» de `specs/032-direccion-carbono/quickstart.md`.
+**Procedencia de las capturas embarcadas:** `specs/032-direccion-carbono/evidence/*.png` (7 capturas del hub) y `specs/033-carbono-app-entera/evidence/*.png` (13 capturas: acceso/partidas/temporada/palmarés/carrera/gráfico en ambos temas, móvil 390, librea extrema y hub-regresión), con el método de producción documentado en la tabla «Evidencias a entregar» de cada quickstart.
 
 **Key Characteristics:**
 - Carbono mate (#0E0F11) con rejilla hairline 16/80 px visible en todo el shell; variante «papel» (#EDEFE9) en tema claro.
@@ -153,7 +198,11 @@ Dos variantes del mismo plano: carbono (oscuro, normativa) y papel (claro). El v
 ### Named Rules
 **La Ley del Volt.** El volt pinta únicamente acción, activo y foco. Jamás pinta datos, estados informativos ni decoración; jamás se liga a la librea. Si un elemento volt no responde al pulso, no es volt. La única lámina volt de gran tamaño del escritorio es el botón de salida a carrera: su rareza es el punto.
 
-**El Dato es Tinta.** Toda cifra, nivel y medición va en tinta (#F2F3F5) sobre mono tabular. Los medidores son ticks de tinta; la fila del jugador en Campeonato se enfatiza con materia (`--hub-line-soft`), no con acción.
+**El Dato es Tinta.** Toda cifra, nivel y medición va en tinta (#F2F3F5) sobre mono tabular. Los medidores son ticks de tinta; la fila del jugador en Campeonato y en la torre de la carrera se enfatiza con materia (`--hub-line-soft`), no con acción. Lo mismo rige para el P1 del podio, mis resultados, la vuelta rápida (chip grabado) y la temporada campeona del palmarés: énfasis grabado o tonal, jamás volt.
+
+**La Semáfora.** Verde (éxito), ámbar (aviso) y rojo (peligro) existen SOLO como significado — avisos, desgaste, banderas, subidas y bajadas de posiciones — y siempre con redundancia de forma o signo (flecha+signo, letra de goma, borde). Nunca decoran, nunca accionan, nunca son el volt. Como TEXTO, el rojo usa su variante legible `--red-text` (#F85149 oscuro; ≥4.5:1 sobre panel y materia) igual que el verde usa `--green-text`; el crudo queda para rellenos (desgaste, bandera, borde de aviso). Los colores de compuesto (S roja, M amarilla, H blanca, I verde, W azul) y las banderas son CONTENIDO del deporte: códigos reales que el mundo no renegocia.
+
+**La Librea es un Dato.** El color del equipo del jugador viaja por el canal `--livery` (crudo: chips, puntos, coches en pista) y `--livery-line` (mezcla al 55 % hacia la tinta del tema, para las líneas del gráfico de ritmo: una librea casi negra jamás esconde una línea). Ningún elemento de interfaz lee la librea; el viejo acento dinámico (`--accent`) está retirado de producción.
 
 ## Typography
 
@@ -161,7 +210,7 @@ Dos variantes del mismo plano: carbono (oscuro, normativa) y papel (claro). El v
 **Body Font:** Inter (idem)
 **Cifra/Dato Font:** ui-monospace, Cascadia Mono, JetBrains Mono, Consolas, Roboto Mono
 
-**Character:** Inter en pesos extremos — Black 900 para el nombre del equipo, 800 en títulos de panel, 600 en labels — enfrentada a una monoespaciada tabular que posee todos los números. La tensión display-extremo vs. cifra-fría es la voz; nunca se cambia de familia para expresar algo.
+**Character:** Inter en pesos extremos — Black 900 para el nombre del equipo y los wordmarks de cabecera, 800 en títulos de panel, 600 en labels — enfrentada a una monoespaciada tabular que posee todos los números. La tensión display-extremo vs. cifra-fría es la voz; nunca se cambia de familia para expresar algo. La Barlow Condensed del look anterior está RETIRADA (033): las posiciones de la torre, el contador de vueltas y los podios son cifras, y beben de la pila mono (`--font-display` reapuntado).
 
 ### Hierarchy
 - **Display** (900, clamp(44px, 7vw, 86px), line-height 0.98, tracking −0.025em, mayúsculas): el nombre de la escudería, dueño del tablón, directamente sobre la rejilla. En móvil clamp(40px, 11.5vw, 58px).
@@ -188,14 +237,14 @@ Móvil (≤860 px): el pulgar manda — riel convertido en tira horizontal scrol
 Plano, casi sin sombras. La profundidad es tonal y lineal: un solo paso de suelo a panel (#0E0F11 → #141519), módulos definidos por su marco de 1 px, y jerarquía por tipografía y hairlines. La única sombra del mundo es la del menú «Más» desplegado (`box-shadow: 4px 6px 18px rgba(0,0,0,0.35)`), un elemento que flota sobre el plano. El foco no eleva: es un outline de 2 px en volt-línea (offset 2 px), o el subrayado vivo de 2 px en inputs.
 
 ### Shadow Vocabulary
-- **Caída de menú** (`4px 6px 18px rgba(0,0,0,0.35)`): solo superficies desplegables que flotan sobre la rejilla (menú Más).
+- **Caída de flotante** (`4px 6px 18px rgba(0,0,0,0.35)`): la ÚNICA sombra del mundo, para superficies que flotan sobre la rejilla — menú Más, avisos (toasts), guía de primera vez, overlays de resultados/elección de gomas/presentación del GP e indicador de bandera.
 
 ### Named Rules
-**La Mesa Plana.** Nada se levanta del plano con sombra para pedir atención; la atención la da el volt. Si un elemento parece necesitar elevación, es que no debería competir con la acción.
+**La Mesa Plana.** Nada se levanta del plano con sombra para pedir atención; la atención la da el volt. Si un elemento parece necesitar elevación, es que no debería competir con la acción. Las capas que FLOTAN (menús, avisos, overlays) sí llevan la caída: no piden atención, existen por encima del plano.
 
 ## Shapes
 
-Esquinas rectas siempre: `border-radius: 0` en botones, chips, fichas, inputs, menús y filas — la única excepción del mundo es el punto de color de rivales (12 px, círculo con borde hairline), que representa la librea como dato. El lenguaje de forma es el del plano técnico: marcos de 1 px (`--hub-line`), separadores internos más suaves (`--hub-line-soft`), la regla graduada bajo el héroe y la caja grabada MÁX (borde de 1.5 px de tinta). No hay gradientes ni blurs; la única textura es la propia rejilla.
+Esquinas rectas siempre: `border-radius: 0` en botones, chips, fichas, inputs, menús y filas — las únicas excepciones del mundo son los círculos-dato (punto de librea, anillos de goma) y el gantry físico de las luces de salida (4 px). El lenguaje de forma es el del plano técnico: marcos de 1 px (`--hub-line`), separadores internos más suaves (`--hub-line-soft`), la regla graduada bajo el héroe y la caja grabada MÁX (borde de 1.5 px de tinta). No hay gradientes ni blurs; la única textura es la propia rejilla — y el único glow permitido es el de las luces de salida encendidas (objeto físico del deporte, misma excepción que su radio).
 
 ## Components
 
@@ -245,7 +294,8 @@ El plano se traza a pasos: regla y ficha entran con `hub-draw` (scaleX 0.02→1,
 
 ### Don't:
 - **Don't** uses volt para datos, estados informativos, decoración o acentos ligados a la librea del jugador (La Ley del Volt).
-- **Don't** redondees esquinas: `border-radius: 0` en todo el mundo (única excepción: el punto-librea de rivales, que es un dato).
-- **Don't** añadas sombras para jerarquía; la única del mundo es la caída del menú desplegable.
+- **Don't** redondees esquinas: `border-radius: 0` en todo el mundo (excepciones: círculos-dato — librea/tcolor/anillos de goma — y el gantry físico de luces).
+- **Don't** añadas sombras para jerarquía; la única familia del mundo es la caída de lo que flota (menús, avisos, overlays).
 - **Don't** pintes cifras del juego en Inter ni fills de medidor en volt; los ticks llenos son tinta.
-- **Don't** documentes ni estiles desde aquí las pantallas aún no migradas (login, slots, carrera, temporada, palmarés): siguen en `src/ui.css` y heredarán Carbono en fases posteriores.
+- **Don't** reintroduzcas el acento dinámico de librea, la Barlow Condensed, radios o cortes diagonales del look anterior: retirados de producción (033).
+- **Don't** uses la semáfora (verde/ámbar/rojo) sin significado ni sin redundancia de forma/signo (La Semáfora).

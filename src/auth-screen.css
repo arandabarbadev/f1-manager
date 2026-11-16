@@ -1,7 +1,10 @@
 @import './ui.css';
 
 /* ============================================================
-   AUTH SCREEN — login card
+   AUTH SCREEN — la puerta de entrada del mundo (spec 033): suelo
+   carbón con la rejilla de construcción, la tarjeta como módulo
+   enmarcado, inputs desnudos (contrato global .field/.in) y el
+   volt ganado por «Entrar».
    ============================================================ */
 
 .auth-screen {
@@ -9,40 +12,47 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-ui); /* spec 019 */
+  background-color: var(--hub-bg);
+  background-image: var(--hub-grid-image);
+  background-size: var(--hub-grid-size);
+  color: var(--hub-text);
+  font-family: var(--font-ui);
   padding: 16px;
   box-sizing: border-box;
 }
 
 .auth-card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-data);
-  padding: 22px 24px;
+  background: var(--hub-panel);
+  border: 1px solid var(--hub-line);
+  border-radius: 0;
+  padding: 26px 28px;
   width: min(94vw, 380px);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
+/* El wordmark del club, mismo peso que el mástil del hub. */
 .auth-card h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
   text-align: center;
 }
 
 .auth-sub {
-  margin: 0 0 6px;
-  font-size: 13px;
-  color: var(--dim);
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--hub-dim);
   text-align: center;
 }
 
 .auth-error {
-  color: var(--red);
+  color: var(--red-text);
   font-size: 13px;
   min-height: 1em;
 }
@@ -61,12 +71,9 @@
   width: 100%;
 }
 
-.auth-google-btn {
-  font-weight: 600;
-}
-
 .auth-note {
   margin: 0;
   font-size: 12px;
-  color: var(--dim);
+  color: var(--hub-dim);
+  line-height: 1.5;
 }

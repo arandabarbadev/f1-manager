@@ -1,16 +1,22 @@
 @import './ui.css';
 
 /* ============================================================
-   SLOTS SCREEN (spec 013): the three save slots
+   SLOTS SCREEN (spec 013) — en el mundo (033): la rejilla bajo
+   las partidas, cada slot un módulo enmarcado, la activa
+   distinguida por MATERIA (relleno tonal + borde fuerte), las
+   cifras de temporada en mono. Dificultad: selector con el activo
+   en volt (es una elección).
    ============================================================ */
 
 .slots-screen {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  color: var(--text);
-  font-family: var(--font-ui); /* spec 019 */
-  background: var(--bg);
+  color: var(--hub-text);
+  font-family: var(--font-ui);
+  background-color: var(--hub-bg);
+  background-image: var(--hub-grid-image);
+  background-size: var(--hub-grid-size);
 }
 
 .slots-header {
@@ -18,19 +24,31 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 12px 16px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 56px;
+  background: var(--hub-mast-bg);
+  border-bottom: 1px solid var(--hub-line);
+  position: relative;
+  z-index: 30;
+  flex: none;
 }
 
 .slots-header h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
 }
 
 .slots-header-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+}
+
+.slots-header .btn {
+  min-height: 40px;
+  padding: 8px 12px;
 }
 
 .slots-main {
@@ -38,7 +56,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
   gap: 14px;
-  padding: 18px;
+  padding: 24px 18px 40px;
   align-content: start;
   max-width: 980px;
   width: 100%;
@@ -47,85 +65,115 @@
 }
 
 .slot-card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-data);
+  background: var(--hub-panel);
+  border: 1px solid var(--hub-line);
+  border-radius: 0;
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
+/* La partida activa se distingue por MATERIA (relleno tonal y
+   borde más fuerte): es información, no acción (Ley del Volt). */
 .slot-card.active {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
+  background: var(--hub-line-soft);
+  border-color: var(--hub-dim);
 }
 
 .slot-card.empty {
-  opacity: 0.75;
+  opacity: 0.9;
 }
 
 .slot-head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
+/* A/B/C: chip cuadrado en mono — círculo solo para el dato-librea. */
 .slot-tag {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-family: var(--hub-mono);
+  font-size: 13px;
   font-weight: 700;
-  background: var(--accent-bg);
-  color: var(--accent-text);
+  border: 1px solid var(--hub-line);
+  color: var(--hub-dim);
   flex: none;
+}
+
+.slot-card.active .slot-tag {
+  color: var(--hub-text);
+  border-color: var(--hub-dim);
 }
 
 .slot-name-input {
   flex: 1;
   min-width: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--hub-line);
+  border-radius: 0;
+  color: var(--hub-text);
+  font-family: var(--font-ui);
   font-weight: 700;
   font-size: 15px;
+  min-height: 40px;
+  padding: 8px 2px;
+  box-sizing: border-box;
+}
+
+.slot-name-input:focus-visible {
+  outline: none;
+  border-bottom: 2px solid var(--hub-action-line);
 }
 
 .slot-name-input:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .slot-active-tag {
   flex: none;
+  font-family: var(--hub-mono);
   font-size: 11px;
   font-weight: 700;
-  color: var(--green-text);
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-data);
-  padding: 2px 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hub-text);
+  border: 1px solid var(--hub-dim);
+  border-radius: 0;
+  padding: 3px 8px;
 }
 
+/* Temporada · ronda · presupuesto · dificultad: cifras, en mono. */
 .slot-meta {
-  font-size: 13px;
-  color: var(--dim);
+  font-family: var(--hub-mono);
+  font-size: 12px;
+  color: var(--hub-dim);
   font-variant-numeric: tabular-nums;
 }
 
 .slot-card.empty .slot-meta {
-  font-style: italic;
+  font-style: normal;
+  letter-spacing: 0.04em;
 }
 
-/* Spec 016: difficulty picker on an empty slot (chosen at creation,
-   baked into the career — not changeable afterwards). */
+/* Spec 016: dificultad del slot vacío — grupo selector del mundo. */
 .slot-diff {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .slot-diff-label {
   font-size: 11px;
-  font-weight: 700;
-  color: var(--dim);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hub-dim);
 }
 
 .slot-diff-btns {
@@ -135,14 +183,15 @@
 
 .slot-diff-btn {
   flex: 1;
-  min-height: 32px;
-  padding: 4px 8px;
+  min-height: 40px;
+  padding: 6px 8px;
   font-size: 13px;
 }
 
 .slot-diff-hint {
   font-size: 12px;
-  color: var(--dim);
+  color: var(--hub-dim);
+  line-height: 1.5;
 }
 
 .slot-actions {
@@ -158,10 +207,14 @@
 @media (max-width: 720px) {
   .slots-main {
     grid-template-columns: 1fr;
-    padding: 12px;
+    padding: 14px 12px 32px;
+  }
+
+  .slots-header {
+    padding: 0 14px;
   }
 
   .slots-header h1 {
-    font-size: 17px;
+    font-size: 14px;
   }
 }

@@ -7,26 +7,15 @@
    blanco y monoespaciada tabular, y UN color de acción (volt)
    que solo aparece donde se puede actuar. La librea es un dato
    (chip en la ficha), nunca el vestuario: el volt es FIJO.
-   El mundo vive entero en esta hoja con tokens --hub-*: ui.css
-   queda intacto para las demás pantallas (plan 032, R2).
+   Desde la spec 033 los tokens del mundo son GLOBALES en ui.css y
+   toda la app comparte esta base; esta hoja solo consume --hub-*.
    ============================================================ */
 
 .team-screen {
-  /* ---- Tokens del mundo (oscuro) ---- */
-  --hub-bg: #0e0f11;             /* carbono mate */
-  --hub-panel: #141519;          /* módulo enmarcado */
-  --hub-mast-bg: rgba(14, 15, 17, 0.92);
+  /* Tokens del mundo: GLOBALES en ui.css desde la spec 033 (toda la
+     app comparte esta base); esta hoja solo consume --hub-*.
+     El hub NO se rediseña: comparte base y luce exactamente igual. */
   --hub-rail-bg: rgba(14, 15, 17, 0.6);
-  --hub-line: #262932;           /* hairline */
-  --hub-line-soft: #1c1e23;
-  --hub-text: #f2f3f5;
-  --hub-dim: #9ba0aa;
-  --hub-grid: rgba(235, 240, 255, 0.085);
-  --hub-grid-minor: rgba(235, 240, 255, 0.035);
-  --hub-action: #d6ff3f;         /* volt: FONDO de acción */
-  --hub-action-ink: #101114;     /* tinta sobre volt */
-  --hub-action-line: #d6ff3f;    /* volt en borde/foco (oscuro) */
-  --hub-mono: ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, 'Roboto Mono', monospace;
 
   display: flex;
   flex-direction: column;
@@ -44,21 +33,10 @@
   scrollbar-color: var(--hub-line) transparent;
 }
 
-/* Variante clara: el mismo plano, sobre papel (research R3) */
+/* Variante clara: la base global de ui.css trae el papel; solo el
+   riel del hub necesita su vidrio propio. */
 :root[data-theme='light'] .team-screen {
-  --hub-bg: #edefe9;
-  --hub-panel: #f7f8f4;
-  --hub-mast-bg: rgba(237, 239, 233, 0.94);
   --hub-rail-bg: rgba(237, 239, 233, 0.62);
-  --hub-line: #b9bfae;
-  --hub-line-soft: #dde0d5;
-  --hub-text: #16181c;
-  --hub-dim: #5b6068;
-  --hub-grid: rgba(22, 24, 28, 0.1);
-  --hub-grid-minor: rgba(22, 24, 28, 0.045);
-  --hub-action: #cdf630;         /* volt pleno de fondo sigue siendo luz */
-  --hub-action-ink: #101114;
-  --hub-action-line: #7d9000;    /* volt oscurecido para líneas y foco */
 }
 
 .team-screen ::selection {
@@ -460,36 +438,9 @@
   margin-bottom: 10px;
 }
 
-.field {
-  display: grid;
-  gap: 7px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--hub-dim);
-  flex: none;
-  min-width: 0;
-}
-
-.team-screen .in {
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--hub-line);
-  border-radius: 0;
-  color: var(--hub-text);
-  font-family: var(--hub-mono);
-  font-size: 14px;
-  min-height: 40px;
-  padding: 8px 2px;
-  box-sizing: border-box;
-  width: 100%;
-}
-
-.team-screen .in:focus-visible {
-  outline: none;
-  border-bottom: 2px solid var(--hub-action-line);
-}
+/* .field y .in viven en ui.css desde la spec 033 (contrato de input
+   del mundo, global); aquí solo queda lo propio del hub: el swatch
+   de librea de Identidad. */
 
 .team-screen .in[type='color'] {
   padding: 2px;

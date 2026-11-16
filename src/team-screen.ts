@@ -1,5 +1,5 @@
 import './team-screen.css';
-import { applyTeamAccent } from './accent';
+import { applyTeamLivery } from './livery';
 import { Car } from './types';
 import {
   createDefaultRoster,
@@ -90,9 +90,10 @@ export function createTeamScreen(
     slotDiff
   );
   saveCareer(career);
-  // Spec 019: this slot's livery color becomes the UI accent (also
-  // covers switching slots from the Partidas screen).
-  applyTeamAccent(
+  // Spec 033: this slot's livery color feeds the DATA channel (dots,
+  // chip, pace-chart lines) — never the interface (also covers
+  // switching slots from the Partidas screen).
+  applyTeamLivery(
     roster.entries.find((e) => e.team.id === roster.playerTeamId)!.team.color
   );
   let tab: TabId = 'team';
@@ -461,9 +462,9 @@ export function createTeamScreen(
     colorInput.value = playerEntry().team.color;
     colorInput.addEventListener('input', () => {
       playerEntry().team.color = colorInput.value;
-      // Spec 019 keeps the livery tinting the NOT-redesigned screens;
-      // spec 032: in the hub it only refreshes its own data chip.
-      applyTeamAccent(colorInput.value);
+      // Spec 032: in the hub the livery only refreshes its own data
+      // chip; spec 033: the data channel follows it app-wide.
+      applyTeamLivery(colorInput.value);
       const c = root.querySelector<HTMLElement>('#hub-livery-chip');
       if (c) c.style.background = colorInput.value;
       const n = root.querySelector<HTMLElement>('#hub-livery-name');

@@ -42,7 +42,7 @@ export function createPalmaresScreen(container: HTMLElement, onBack: () => void)
 
   // Career totals — the headline numbers.
   const totalsCard = document.createElement('section');
-  totalsCard.className = 'card cut palmares-totals';
+  totalsCard.className = 'palmares-totals';
   totalsCard.innerHTML = `
     <h2>Tu carrera</h2>
     <div class="pt-grid">
@@ -59,7 +59,7 @@ export function createPalmaresScreen(container: HTMLElement, onBack: () => void)
   if (entries.length === 0) {
     // Constitution V: say what will appear, never stay mute.
     const empty = document.createElement('section');
-    empty.className = 'card cut palmares-empty';
+    empty.className = 'palmares-empty';
     empty.innerHTML = `
       <h2>Aún no hay temporadas cerradas</h2>
       <p>Cuando termines todas las rondas de una temporada y pulses
@@ -71,7 +71,7 @@ export function createPalmaresScreen(container: HTMLElement, onBack: () => void)
   }
 
   const listCard = document.createElement('section');
-  listCard.className = 'card cut palmares-list';
+  listCard.className = 'palmares-list';
   for (const entry of entries) {
     listCard.appendChild(palmaresRow(entry));
   }

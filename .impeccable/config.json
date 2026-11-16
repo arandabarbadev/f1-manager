@@ -26,6 +26,24 @@
         ],
         "createdAt": "2026-11-10T15:21:06.457Z",
         "reason": "Los bocetos son artefactos archivados de la ronda de direcciones (anteriores a DESIGN.md): cada uno exhibe deliberadamente un mundo tipografico propio y descartado; no son UI de produccion"
+      },
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "src/*.css"
+        ],
+        "createdAt": "2026-11-15T14:30:38.963Z",
+        "reason": "La rejilla de construccion 16/80px es la IDENTIDAD de la direccion Carbono elegida por Rafa (boceto-3, spec 032): 'la identidad es la rejilla'. Es una superficie de plano de ingenieria deliberada (medicion), no un adorno generado; documentada en DESIGN.md (The Grid Stays On)"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "src/race-screen.css"
+        ],
+        "createdAt": "2026-11-15T14:45:30.784Z",
+        "reason": "El glow rojo de las luces de salida (spec 012) es un OBJETO FISICO del deporte: el semaforo de 5 luces de la F1 ilumina asi antes de apagarse para dar la salida. Es contenido del juego (como los coches o las banderas), no decoracion de UI; misma excepcion documentada que su radio fisico de 4px (DESIGN.md rounded.exceptions)"
       }
     ]
   }
