@@ -214,7 +214,7 @@ extremos de librea).
   actualización de `DESIGN.md` + `.impeccable/design.json`
   (frontera: toda la app; semáfora y excepciones documentadas) y
   finish review con veredicto
-- [ ] T024 Commit de la feature (1 commit, histórico de la casa)
+- [X] T024 Commit de la feature (1 commit, histórico de la casa)
 
 ---
 
