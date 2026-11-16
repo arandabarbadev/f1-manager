@@ -50,6 +50,16 @@ Cada turno paga otra vez toda la conversación, así que las sesiones largas se 
 
 Motivo: las sesiones gigantes quemaban tokens sin que Rafa pudiera evitarlo; el aviso en el momento justo es lo que le da el control.
 
+### XII. Spec Kit siempre
+Toda función, por pequeña que parezca, pasa por Spec Kit completa: spec → plan → tasks → analyze → implementar → validar. No hay atajos por tamaño ni por prisa; si algo no merece una spec, no entra en la app.
+
+Motivo: Rafa lo fijó el 2026-11-16 para que ninguna funcionalidad se implemente fuera del proceso.
+
+### XIII. Lo público se publica
+Cuando una función cierra y se commitea, se sube y se despliega (push + GitHub Pages) sin esperar permiso: lo terminado y verificado es público. Lo privado jamás se sube (regla II): claves, datos personales y configuración local como firebase-config.ts.
+
+Motivo: las funciones 030-033 quedaron commiteadas pero sin publicar y la web servía la versión vieja; Rafa creyó que el diseño "no salía" (2026-11-16).
+
 ## Lecciones aprendidas
 <!-- Reglas técnicas obligatorias para el plan y la implementación. -->
 
@@ -64,4 +74,4 @@ Si la app tiene service worker, el HTML se pide a la red primero y la caché sol
 - Esta constitución tiene prioridad sobre cualquier plan o tarea. Si el plan la incumple, se dice en el Constitution Check y se justifica o se corrige.
 - Cada vez que un error me cueste tiempo, se añade aquí como lección nueva y se sube la versión.
 
-**Versión**: 1.5.0 | **Ratificada**: 2026-10-04 | **Última enmienda**: 2026-11-08
+**Versión**: 1.6.0 | **Ratificada**: 2026-10-04 | **Última enmienda**: 2026-11-16
